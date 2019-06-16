@@ -1,0 +1,49 @@
+local candy_idle = true
+
+function init(self)
+	msg.post(".", "acquire_input_focus")
+	go.set_scale(vmath.vector3(3))
+end
+
+function on_message(self, message_id, message, sender)
+	if message_id == hash("animation_done") then
+		msg.post("gui#points", "candy_crushed")
+		msg.post("factory#factory_script", "candy_crushed")
+		go.delete()
+		candy_idle = true
+	end
+end
+
+function on_input(self, action_id, action)
+	if action_id == hash("crush") and action.pressed then
+		if is_input_on_candy(action_id, action) and candy_idle then
+			go.cancel_animations(".", "position.x")
+			go.cancel_animations(".", "position.y")
+			msg.post("#sprite", "play_animation", {id = hash(sprite_name .. "_explosion")})
+			candy_idle = false
+		end
+	end
+end
+
+function is_input_on_candy(action_id, action)
+	-- does not take care of sprite with offset to parent game object
+
+	local go_scale = go.get_scale_vector("#sprite")
+	local sprite_scale = go.get("#sprite", "scale")
+	local size = go.get("#sprite", "size")
+	local scaled_size = vmath.vector3(size.x * go_scale.x * sprite_scale.x, size.y * go_scale.y * sprite_scale.y, 0)
+	
+	local pos = go.get_position("#sprite")
+
+	local camera = require("orthographic.camera")
+	local screen_coordinates = vmath.vector3(action.x, action.y, 0)
+	local action_converted = camera.screen_to_world(hash("/camera"), screen_coordinates)
+
+	if 	action_converted.x >= pos.x - scaled_size.x / 2 and 
+		action_converted.x <= pos.x + scaled_size.x / 2 and 
+		action_converted.y >= pos.y - scaled_size.y / 2 and 
+		action_converted.y <= pos.y + scaled_size.y / 2 then
+		return true
+	end
+	return false
+end

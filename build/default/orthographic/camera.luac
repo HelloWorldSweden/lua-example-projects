@@ -1,0 +1,1140 @@
+
+–®
+¬∏--- Camera module to use in combination with the camera.go or camera.script
+
+local M = {}
+
+local HIGH_DPI = (sys.get_config("display.high_dpi", "0") == "1")
+local dpi_ratio = 1
+
+M.SHAKE_BOTH = hash("both")
+M.SHAKE_HORIZONTAL = hash("horizontal")
+M.SHAKE_VERTICAL = hash("vertical")
+
+M.PROJECTOR = {}
+M.PROJECTOR.DEFAULT = hash("DEFAULT")
+M.PROJECTOR.FIXED_AUTO = hash("FIXED_AUTO")
+M.PROJECTOR.FIXED_ZOOM = hash("FIXED_ZOOM")
+
+local DISPLAY_WIDTH = tonumber(sys.get_config("display.width")) or 960
+local DISPLAY_HEIGHT = tonumber(sys.get_config("display.height")) or 640
+local UPDATE_FREQUENCY = tonumber(sys.get_config("display.update_frequency") or sys.get_config("display.frame_cap"))
+if UPDATE_FREQUENCY == 0 then UPDATE_FREQUENCY = 60 end
+
+local WINDOW_WIDTH = DISPLAY_WIDTH
+local WINDOW_HEIGHT = DISPLAY_HEIGHT
+
+
+local GUI_ADJUST = {
+	[gui.ADJUST_FIT] = {sx=1, sy=1, ox=0, oy=0}, -- Fit
+	[gui.ADJUST_ZOOM] = {sx=1, sy=1, ox=0, oy=0}, -- Zoom
+	[gui.ADJUST_STRETCH] = {sx=1, sy=1, ox=0, oy=0}, -- Stretch
+}
+
+-- center camera to middle of screen
+local OFFSET = vmath.vector3(DISPLAY_WIDTH / 2, DISPLAY_HEIGHT / 2, 0)
+
+local VECTOR3_ZERO = vmath.vector3(0)
+local VECTOR3_MINUS1_Z = vmath.vector3(0, 0, -1.0)
+local VECTOR3_UP = vmath.vector3(0, 1.0, 0)
+
+local MATRIX4 = vmath.matrix4()
+
+local v4_tmp = vmath.vector4()
+local v3_tmp = vmath.vector3()
+
+local cameras = {}
+
+--- projection providers (projectors)
+-- a mapping of id to function to calculate and return a projection matrix
+local projectors = {}
+
+-- the default projector from the default render script
+-- will stretch content
+projectors[M.PROJECTOR.DEFAULT] = function(camera_id, near_z, far_z, zoom)
+	return vmath.matrix4_orthographic(0, DISPLAY_WIDTH, 0, DISPLAY_HEIGHT, near_z, far_z)
+end
+
+-- setup a fixed aspect ratio projection that zooms in/out to fit the original viewport contents
+-- regardless of window size
+projectors[M.PROJECTOR.FIXED_AUTO] = function(camera_id, near_z, far_z, zoom)
+	local zoom_factor = math.min(WINDOW_WIDTH / DISPLAY_WIDTH, WINDOW_HEIGHT / DISPLAY_HEIGHT) * zoom * dpi_ratio
+	local projected_width = WINDOW_WIDTH / (zoom_factor / dpi_ratio)
+	local projected_height = WINDOW_HEIGHT / (zoom_factor / dpi_ratio)
+	local xoffset = -(projected_width - DISPLAY_WIDTH) / 2
+	local yoffset = -(projected_height - DISPLAY_HEIGHT) / 2
+	return vmath.matrix4_orthographic(xoffset, xoffset + projected_width, yoffset, yoffset + projected_height, near_z, far_z)
+end
+
+-- setup a fixed aspect ratio projection with a fixed zoom
+projectors[M.PROJECTOR.FIXED_ZOOM] = function(camera_id, near_z, far_z, zoom)
+	local projected_width = WINDOW_WIDTH / (zoom / dpi_ratio)
+	local projected_height = WINDOW_HEIGHT / (zoom / dpi_ratio)
+	local xoffset = -(projected_width - DISPLAY_WIDTH) / 2
+	local yoffset = -(projected_height - DISPLAY_HEIGHT) / 2
+	return vmath.matrix4_orthographic(xoffset, xoffset + projected_width, yoffset, yoffset + projected_height, near_z, far_z)
+end
+
+
+-- http://www.rorydriscoll.com/2016/03/07/frame-rate-independent-damping-using-lerp/
+-- return vmath.lerp(1 - math.pow(t, dt), v1, v2)
+-- https://www.gamasutra.com/blogs/ScottLembcke/20180404/316046/Improved_Lerp_Smoothing.php
+local function lerp_with_dt(t, dt, v1, v2)
+	local rate = UPDATE_FREQUENCY * math.log10(1 - t)
+	return vmath.lerp(1 - math.pow(10, rate * dt), v1, v2)
+	--return vmath.lerp(t, v1, v2)
+end
+
+--- Add a custom projector
+-- @param projector_id Unique id of the projector (hash)
+-- @param projector_fn The function to call when the projection matrix needs to be calculated
+-- The function will receive near_z and far_z as arguments
+function M.add_projector(projector_id, projector_fn)
+	assert(projector_id, "You must provide a projector id")
+	assert(projector_fn, "You must provide a projector function")
+	projectors[projector_id] = projector_fn
+end
+
+--- Set the projector used by a camera
+-- @param camera_id
+-- @param projector_id The projector to use
+function M.use_projector(camera_id, projector_id)
+	assert(camera_id, "You must provide a camera id")
+	assert(projector_id, "You must provide a projector id")
+	assert(projectors[projector_id], "Unknown projection id")
+	local camera = cameras[camera_id]
+	msg.post(camera.url, "use_projection", { projection = projector_id })
+end
+
+--- Set window scaling factor (basically retina or no retina screen)
+-- There is no built-in way to detect if Defold is running on a retina or
+-- non retina screen. This information combined with the High DPI setting
+-- in game.project can be used to ensure that the zoom behaves the same way
+-- regardless of screen type and High DPI setting.
+-- You can use an extension such as DefOS to get the window scaling factor.
+-- @param scaling_factor Scaling factor of the display (1=normal, 2=retina)
+function M.set_window_scaling_factor(scaling_factor)
+	assert(scaling_factor, "You must provide a scaling factor")
+	if HIGH_DPI then
+		dpi_ratio = 1 / scaling_factor
+	else
+		dpi_ratio = 1
+	end
+end
+
+--- Set the window size
+-- Call this from your render script to update the current window size
+-- The width and height can later be retrieved through the M.get_window_size()
+-- function. This is a convenience for use by custom projector functions
+-- @param width Current window width
+-- @param height Current window height
+function M.set_window_size(width, height)
+	assert(width, "You must provide window width")
+	assert(height, "You must provide window height")
+	WINDOW_WIDTH = width
+	WINDOW_HEIGHT = height
+
+	local sx = WINDOW_WIDTH / DISPLAY_WIDTH
+	local sy = WINDOW_HEIGHT / DISPLAY_HEIGHT
+
+	-- Fit
+	local adjust = GUI_ADJUST[gui.ADJUST_FIT]
+	local scale = math.min(sx, sy)
+	adjust.sx = scale
+	adjust.sy = scale
+	adjust.ox = (WINDOW_WIDTH - DISPLAY_WIDTH * scale) * 0.5 / scale
+	adjust.oy = (WINDOW_HEIGHT - DISPLAY_HEIGHT * scale) * 0.5 / scale
+
+	-- Zoom
+	adjust = GUI_ADJUST[gui.ADJUST_ZOOM]
+	scale = math.max(sx, sy)
+	adjust.sx = scale
+	adjust.sy = scale
+	adjust.ox = (WINDOW_WIDTH - DISPLAY_WIDTH * scale) * 0.5 / scale
+	adjust.oy = (WINDOW_HEIGHT - DISPLAY_HEIGHT * scale) * 0.5 / scale
+
+	-- Stretch
+	adjust = GUI_ADJUST[gui.ADJUST_STRETCH]
+	adjust.sx = sx
+	adjust.sy = sy
+	-- distorts to fit window, offsets always zero
+end
+
+--- Get the window size
+-- @return width Current window width
+-- @return height Current window height
+function M.get_window_size()
+	return WINDOW_WIDTH, WINDOW_HEIGHT
+end
+
+--- Get the display size (ie from game.project)
+-- @return width Display width from game.project
+-- @return height Display height from game.project
+function M.get_display_size()
+	return DISPLAY_WIDTH, DISPLAY_HEIGHT
+end
+
+local function calculate_projection(camera)
+	local projection_id = camera.projection_id
+	assert(projectors[projection_id], "Unknown projection id")
+	local projector_fn = projectors[projection_id] or projectors[M.PROJECTOR.DEFAULT]
+	return projector_fn(camera_id, camera.near_z, camera.far_z, camera.zoom)
+end
+
+
+local function calculate_view(camera, camera_world_pos, offset)
+	local rot = go.get_world_rotation(camera.id)
+	local pos = camera_world_pos - vmath.rotate(rot, OFFSET)
+	if offset then
+		pos = pos + offset
+	end
+
+	local look_at = pos + vmath.rotate(rot, VECTOR3_MINUS1_Z)
+	local up = vmath.rotate(rot, VECTOR3_UP)
+	local view = vmath.matrix4_look_at(pos, look_at, up)
+	return view
+end
+
+
+--- Initialize a camera
+-- Note: This is called automatically from the init() function of the camera.script
+-- @param camera_id
+-- @param camera_script_url
+function M.init(camera_id, camera_script_url, settings)
+	assert(camera_id, "You must provide a camera id")
+	assert(camera_script_url, "You must provide a camera script url")
+	cameras[camera_id] = settings
+	local camera = cameras[camera_id]
+	camera.id = camera_id
+	camera.url = camera_script_url
+	camera.projection_id = go.get(camera_script_url, "projection")
+	camera.near_z = go.get(camera_script_url, "near_z")
+	camera.far_z = go.get(camera_script_url, "far_z")
+	camera.view = calculate_view(camera, go.get_world_position(camera_id))
+	camera.projection = calculate_projection(camera)
+end
+
+
+--- Finalize a camera
+-- Note: This is called automatically from the final() function of the camera.script
+-- @param camera_id
+function M.final(camera_id)
+	assert(camera_id, "You must provide a camera id")
+	cameras[camera_id] = nil
+end
+
+--- Update a camera
+-- When calling this function a number of things happen:
+-- * Follow target game object (if any)
+-- * Limit camera to camera bounds (if any)
+-- * Shake the camera (if enabled)
+-- * Recalculate the view and projection matrix
+--
+-- Note: This is called automatically from the camera.script
+-- @param camera_id
+-- @param dt
+function M.update(camera_id, dt)
+	assert(camera_id, "You must provide a camera id")
+	local camera = cameras[camera_id]
+	if not camera then
+		return
+	end
+
+	local camera_world_pos = go.get_world_position(camera_id)
+	local camera_world_to_local_diff = camera_world_pos - go.get_position(camera_id)
+	local follow_enabled = go.get(camera.url, "follow")
+	if follow_enabled then
+		local follow_horizontal = go.get(camera.url, "follow_horizontal")
+		local follow_vertical = go.get(camera.url, "follow_vertical")
+		local follow = go.get(camera.url, "follow_target")
+		local follow_offset = go.get(camera.url, "follow_offset")
+		local target_world_pos = go.get_world_position(follow) + follow_offset
+		local new_pos
+		local deadzone_top = go.get(camera.url, "deadzone_top")
+		local deadzone_left = go.get(camera.url, "deadzone_left")
+		local deadzone_right = go.get(camera.url, "deadzone_right")
+		local deadzone_bottom = go.get(camera.url, "deadzone_bottom")
+		if deadzone_top ~= 0 or deadzone_left ~= 0 or deadzone_right ~= 0 or deadzone_bottom ~= 0 then
+			new_pos = vmath.vector3(camera_world_pos)
+			local left_edge = camera_world_pos.x - deadzone_left
+			local right_edge = camera_world_pos.x + deadzone_right
+			local top_edge = camera_world_pos.y + deadzone_top
+			local bottom_edge = camera_world_pos.y - deadzone_bottom
+			if target_world_pos.x < left_edge then
+				new_pos.x = new_pos.x - (left_edge - target_world_pos.x)
+			elseif target_world_pos.x > right_edge then
+				new_pos.x = new_pos.x + (target_world_pos.x - right_edge)
+			end
+			if target_world_pos.y > top_edge then
+				new_pos.y = new_pos.y + (target_world_pos.y - top_edge)
+			elseif target_world_pos.y < bottom_edge then
+				new_pos.y = new_pos.y - (bottom_edge - target_world_pos.y)
+			end
+		else
+			new_pos = target_world_pos
+		end
+		new_pos.z = camera_world_pos.z
+		if not follow_vertical then
+			new_pos.y = camera_world_pos.y
+		end
+		if not follow_horizontal then
+			new_pos.x = camera_world_pos.x
+		end
+		local follow_lerp = go.get(camera.url, "follow_lerp")
+		camera_world_pos = lerp_with_dt(follow_lerp, dt, camera_world_pos, new_pos)
+		camera_world_pos.z = new_pos.z
+	end
+
+	local bounds_top = go.get(camera.url, "bounds_top")
+	local bounds_left = go.get(camera.url, "bounds_left")
+	local bounds_bottom = go.get(camera.url, "bounds_bottom")
+	local bounds_right = go.get(camera.url, "bounds_right")
+	if bounds_top ~= 0 or bounds_left ~= 0 or bounds_bottom ~= 0 or bounds_right ~= 0 then
+		local cp = M.world_to_screen(camera_id, vmath.vector3(camera_world_pos))
+		local tr = M.world_to_screen(camera_id, vmath.vector3(bounds_right, bounds_top, 0))
+		local bl = M.world_to_screen(camera_id, vmath.vector3(bounds_left, bounds_bottom, 0))
+
+		local tr_offset = tr - OFFSET
+		local bl_offset = bl + OFFSET
+
+		local bounds_width = tr.x - bl.x
+		if bounds_width < DISPLAY_WIDTH then
+			cp.x = bl.x + bounds_width / 2
+		else
+			cp.x = math.max(cp.x, bl_offset.x)
+			cp.x = math.min(cp.x, tr_offset.x)
+		end
+
+		local bounds_height = tr.y - bl.y
+		if bounds_height < DISPLAY_HEIGHT then
+			cp.y = bl.y + bounds_height / 2
+		else
+			cp.y = math.max(cp.y, bl_offset.y)
+			cp.y = math.min(cp.y, tr_offset.y)
+		end
+
+		camera_world_pos = M.screen_to_world(camera_id, cp)
+	end
+
+	go.set_position(camera_world_pos + camera_world_to_local_diff, camera_id)
+
+	
+	if camera.shake then
+		camera.shake.duration = camera.shake.duration - dt
+		if camera.shake.duration < 0 then
+			if camera.shake.cb then camera.shake.cb() end
+			camera.shake = nil
+		else
+			if camera.shake.horizontal then
+				camera.shake.offset.x = (DISPLAY_WIDTH * camera.shake.intensity) * (math.random() - 0.5)
+			end
+			if camera.shake.vertical then
+				camera.shake.offset.y = (DISPLAY_WIDTH * camera.shake.intensity) * (math.random() - 0.5)
+			end
+		end
+	end
+
+	if camera.recoil then
+		camera.recoil.time_left = camera.recoil.time_left - dt
+		if camera.recoil.time_left < 0 then
+			camera.recoil = nil
+		else
+			local t = camera.recoil.time_left / camera.recoil.duration
+			camera.recoil.offset = vmath.lerp(t, VECTOR3_ZERO, camera.recoil.offset)
+		end
+	end
+
+	local offset
+	if camera.shake or camera.recoil then
+		offset = VECTOR3_ZERO
+		if camera.shake then
+			offset = offset + camera.shake.offset
+		end
+		if camera.recoil then
+			offset = offset + camera.recoil.offset
+		end
+	end
+	camera.offset = offset
+	camera.projection_id = go.get(camera.url, "projection")
+	camera.near_z = go.get(camera.url, "near_z")
+	camera.far_z = go.get(camera.url, "far_z")
+	camera.zoom = go.get(camera.url, "zoom")
+	camera.view = calculate_view(camera, camera_world_pos, offset)	
+	camera.projection = calculate_projection(camera)
+end
+
+
+--- Follow a game object
+-- @param camera_id
+-- @param target The game object to follow
+-- @param options Table with options
+--		lerp - lerp to smoothly move the camera towards the target (default: nil)
+-- 		offset - Offset from target position (default: nil)
+--		horizontal - true if following target along horizontal axis (default: true)
+--		vertical - true if following target along vertical axis (default: true)
+--		immediate - true if camera should be immediately positioned on the target
+function M.follow(camera_id, target, options, __offset)
+	assert(camera_id, "You must provide a camera id")
+	assert(target, "You must provide a target")
+
+	-- handle old function signature where 3rd argument was lerp and 4th was offset
+	local lerp = nil
+	local offset = nil
+	local vertical = true
+	local horizontal = true
+	local immediate = false
+	if type(options) == "table" then
+		lerp = options.lerp
+		offset = options.offset
+		horizontal = options.horizontal
+		vertical = options.vertical
+		immediate = options.immediate
+	else
+		lerp = options
+		offset = __offset
+	end
+	
+	msg.post(cameras[camera_id].url, "follow", {
+		target = target,
+		lerp = lerp,
+		offset = offset,
+		horizontal = horizontal,
+		vertical = vertical,
+		immediate = immediate,
+	})
+end
+
+
+--- Unfollow a game object
+-- @param camera_id
+function M.unfollow(camera_id)
+	assert(camera_id, "You must provide a camera id")
+	msg.post(cameras[camera_id].url, "unfollow")
+end
+
+--- Set the camera deadzone
+-- @param camera_id
+-- @param left Left edge of deadzone. Pass nil to remove deadzone.
+-- @param top
+-- @param right
+-- @param bottom
+function M.deadzone(camera_id, left, top, right, bottom)
+	assert(camera_id, "You must provide a camera id")
+	local camera = cameras[camera_id]
+	if left and right and top and bottom then
+		msg.post(camera.url, "deadzone", { left = left, top = top, right = right, bottom = bottom })
+	else
+		msg.post(camera.url, "deadzone")
+	end
+end
+
+
+--- Set the camera bounds
+-- @param camera_id
+-- @param left Left edge of camera bounds. Pass nil to remove bounds.
+-- @param top
+-- @param right
+-- @param bottom
+function M.bounds(camera_id, left, top, right, bottom)
+	assert(camera_id, "You must provide a camera id")
+	local camera = cameras[camera_id]
+	if left and top and right and bottom then
+		msg.post(camera.url, "bounds", { left = left, top = top, right = right, bottom = bottom })
+	else
+		msg.post(camera.url, "bounds")
+	end
+end
+
+
+--- Shake a camera
+-- @param camera_id
+-- @param intensity Intensity of the shake in percent of screen width. Optional, default: 0.05.
+-- @param duration Duration of the shake. Optional, default: 0.5s.
+-- @param direction both|horizontal|vertical. Optional, default: both
+-- @param cb Function to call when shake has completed. Optional
+function M.shake(camera_id, intensity, duration, direction, cb)
+	assert(camera_id, "You must provide a camera id")
+	cameras[camera_id].shake = {
+		intensity = intensity or 0.05,
+		duration = duration or 0.5,
+		horizontal = direction ~= M.SHAKE_VERTICAL or false,
+		vertical = direction ~= M.SHAKE_HORIZONTAL or false,
+		offset = vmath.vector3(0),
+		cb = cb,
+	}
+end
+
+
+--- Stop shaking a camera
+-- @param camera_id
+function M.stop_shaking(camera_id)
+	assert(camera_id, "You must provide a camera id")
+	cameras[camera_id].shake = nil
+end
+
+
+--- Simulate a recoil effect
+-- @param camera_id
+-- @param offset Amount to offset the camera with
+-- @param duration Duration of the recoil. Optional, default: 0.5s.
+function M.recoil(camera_id, offset, duration)
+	assert(camera_id, "You must provide a strength id")
+	cameras[camera_id].recoil = {
+		offset = offset,
+		duration = duration or 0.5,
+		time_left = duration or 0.5,
+	}
+end
+
+
+--- Set the zoom level of a camera
+-- @param camera_id
+-- @param zoom The zoom level of the camera
+function M.set_zoom(camera_id, zoom)
+	assert(camera_id, "You must provide a camera id")
+	assert(zoom, "You must provide a zoom level")
+	local camera = cameras[camera_id]
+	msg.post(camera.url, "zoom_to", { zoom = zoom })
+	camera.zoom = zoom
+	camera.projection = calculate_projection(camera)
+end
+
+
+--- Get the zoom level of a camera
+-- @param camera_id
+-- @return Current zoom level of the camera
+function M.get_zoom(camera_id)
+	assert(camera_id, "You must provide a camera id")
+	return cameras[camera_id].zoom
+end
+
+
+--- Get the projection matrix for a camera
+-- @param camera_id
+-- @return Projection matrix
+function M.get_projection(camera_id)
+	assert(camera_id, "You must provide a camera id")
+	return cameras[camera_id].projection
+end
+
+
+--- Get the view matrix for a specific camera, based on the camera position
+-- and rotation
+-- @param camera_id
+-- @return View matrix
+function M.get_view(camera_id)
+	assert(camera_id, "You must provide a camera id")
+	return cameras[camera_id].view
+end
+
+
+--- Send the view and projection matrix for a camera to the render script
+-- @param camera_id
+function M.send_view_projection(camera_id)
+	assert(camera_id, "You must provide a camera id")
+	local camera = cameras[camera_id]
+	local view = camera.view or MATRIX4
+	local projection = camera.projection or MATRIX4
+	msg.post("@render:", "set_view_projection", { id = camera_id, view = view, projection = projection })
+end
+
+
+--- Send the camera offset tp the render script
+-- @param camera_id
+function M.send_camera_offset(camera_id)
+	assert(camera_id, "You must provide a camera id")
+	local camera = cameras[camera_id]
+	msg.post("@render:", "set_camera_offset", { id = camera_id, offset = camera.offset })
+end
+
+
+--- Convert screen coordinates to world coordinates based
+-- on a specific camera's view and projection
+-- Screen coordinates are the scaled coordinates provided by action.x and action.y
+-- in on_input()
+-- @param camera_id
+-- @param screen Screen coordinates as a vector3
+-- @return World coordinates
+-- http://webglfactory.blogspot.se/2011/05/how-to-convert-world-to-screen.html
+function M.screen_to_world(camera_id, screen)
+	assert(camera_id, "You must provide a camera id")
+	assert(screen, "You must provide screen coordinates to convert")
+	local view = cameras[camera_id].view or MATRIX4
+	local projection = cameras[camera_id].projection or MATRIX4
+	return M.unproject(view, projection, vmath.vector3(screen))
+end
+
+
+--- Convert window coordinates to world coordinates based
+-- on a specific camera's view and projection
+-- Window coordinates are the non-scaled coordinates provided by action.screen_x
+-- and action.screen_y in on_input()
+-- @param camera_id
+-- @param window Window coordinates as a vector3
+-- @return World coordinates
+function M.window_to_world(camera_id, window)
+	assert(camera_id, "You must provide a camera id")
+	assert(window, "You must provide window coordinates to convert")
+	local view = cameras[camera_id].view or MATRIX4
+	local projection = cameras[camera_id].projection or MATRIX4
+	local scale_x = window.x * dpi_ratio * DISPLAY_WIDTH / WINDOW_WIDTH
+	local scale_y = window.y * dpi_ratio * DISPLAY_HEIGHT / WINDOW_HEIGHT
+	local screen = vmath.vector3(scale_x, scale_y, 0)
+	return M.unproject(view, projection, screen)
+end
+
+--- Convert world coordinates to screen coordinates based
+-- on a specific camera's view and projection.
+-- @param camera_id
+-- @param world World coordinates as a vector3
+-- @return Screen coordinates
+-- http://webglfactory.blogspot.se/2011/05/how-to-convert-world-to-screen.html
+function M.world_to_screen(camera_id, world, adjust_mode)
+	assert(camera_id, "You must provide a camera id")
+	assert(world, "You must provide world coordinates to convert")
+	local view = cameras[camera_id].view or MATRIX4
+	local projection = cameras[camera_id].projection or MATRIX4
+	local screen = M.project(view, projection, vmath.vector3(world))
+	if adjust_mode then
+		screen.x = screen.x / GUI_ADJUST[adjust_mode].sx - GUI_ADJUST[adjust_mode].ox
+		screen.y = screen.y / GUI_ADJUST[adjust_mode].sy - GUI_ADJUST[adjust_mode].oy
+	end
+	return vmath.vector3(screen.x, screen.y, screen.z)
+end
+
+
+--- Translate world coordinates to screen coordinates given a
+-- view and projection matrix
+-- @param view View matrix
+-- @param projection Projection matrix
+-- @param world World coordinates as a vector3
+-- @return The mutated world coordinates (ie the same v3 object)
+-- translated to screen coordinates
+function M.project(view, projection, world)
+	assert(view, "You must provide a view")
+	assert(projection, "You must provide a projection")
+	assert(world, "You must provide world coordinates to translate")
+	v4_tmp.x, v4_tmp.y, v4_tmp.z, v4_tmp.w = world.x, world.y, world.z, 1
+	local v4 = projection * view * v4_tmp
+	world.x = ((v4.x + 1) / 2) * WINDOW_WIDTH
+	world.y = ((v4.y + 1) / 2) * WINDOW_HEIGHT
+	world.z = ((v4.z + 1) / 2)
+	return world
+end
+
+
+local function unproject_xyz(inverse_view_projection, x, y, z)
+	x = (2 * x / DISPLAY_WIDTH) - 1
+	y = (2 * y / DISPLAY_HEIGHT) - 1
+	z = (2 * z) - 1
+	local inv = inverse_view_projection
+	local x1 = x * inv.m00 + y * inv.m01 + z * inv.m02 + inv.m03
+	local y1 = x * inv.m10 + y * inv.m11 + z * inv.m12 + inv.m13
+	local z1 = x * inv.m20 + y * inv.m21 + z * inv.m22 + inv.m23
+	return x1, y1, z1
+end
+
+--- Translate screen coordinates to world coordinates given a
+-- view and projection matrix 
+-- @param view View matrix
+-- @param projection Projection matrix
+-- @param screen Screen coordinates as a vector3
+-- @return The mutated screen coordinates (ie the same v3 object)
+-- translated to world coordinates
+function M.unproject(view, projection, screen)
+	assert(view, "You must provide a view")
+	assert(projection, "You must provide a projection")
+	assert(screen, "You must provide screen coordinates to translate")
+	local inv = vmath.inv(projection * view)
+	screen.x, screen.y, screen.z = unproject_xyz(inv, screen.x, screen.y, screen.z)
+	return screen
+end
+
+--- Get the screen bounds as world coordinates, ie where in world space the
+-- screen corners are
+-- @param camera_id
+-- @return bounds Vector4 where x is left, y is top, z is right and w is bottom
+function M.screen_to_world_bounds(camera_id)
+	assert(camera_id, "You must provide a camera id")
+	local view = cameras[camera_id].view or MATRIX4
+	local projection = cameras[camera_id].projection or MATRIX4
+	local inv = vmath.inv(projection * view)
+	local bl_x, bl_y = unproject_xyz(inv, 0, 0, 0)
+	local br_x, br_y = unproject_xyz(inv, DISPLAY_WIDTH, 0, 0)
+	local tl_x, tl_y = unproject_xyz(inv, 0, DISPLAY_HEIGHT, 0)
+	return vmath.vector4(bl_x, tl_y, br_x, bl_y)
+end
+
+return M
+/orthographic/camera.luaıwLJ =/orthographic/camera.luaò  	K46  9)  -  )  - 	 
+ D ¿¿matrix4_orthographic
+vmathDISPLAY_WIDTH DISPLAY_HEIGHT camera_id  
+near_z  
+far_z  
+zoom  
+ ° %”:6  9-  - #- - #B"- "-  - ##- - ##- !  - !  6	 9		
+      D	 Ä¿Ä¿Ämatrix4_orthographic
+vmathmin	mathWINDOW_WIDTH DISPLAY_WIDTH WINDOW_HEIGHT DISPLAY_HEIGHT dpi_ratio camera_id  &near_z  &far_z  &zoom  &zoom_factor projected_width projected_height xoffset yoffset 	 Œ πD-  - ##- - ##- !  - !  6  9	  
+    D ÄÄÄ¿¿matrix4_orthographic
+vmathWINDOW_WIDTH dpi_ratio WINDOW_HEIGHT DISPLAY_WIDTH DISPLAY_HEIGHT camera_id  near_z  far_z  zoom  projected_width projected_height xoffset yoffset 	 ® 	=P-  6  9  B"6 96  9)
+ "B   D Äpow	lerp
+vmath
+log10	mathUPDATE_FREQUENCY t  dt  v1  v2  rate  ∫  5Z6    ' B6   ' B-  < K  ¿*You must provide a projector function$You must provide a projector idassertprojectors projector_id  projector_fn   Ω 
+ Oc6    ' B6   ' B6  -  8' B- 8 6 99' 5 =	BK  ¿¿projection  use_projectionurl	postmsgUnknown projection id$You must provide a projector id!You must provide a camera idassertprojectors cameras camera_id  projector_id  camera  ô 1r6    ' B-    XÄ  . XÄ0  K  ¿Ä&You must provide a scaling factorassertHIGH_DPI dpi_ratio scaling_factor   Ö 	J∫Å6    ' B6   ' B.   . -  - #- - #- 6 986 9  B==-  - "! #=	- - "! #=
+- 6 986 9  B ==-  - "! #=	- - "! #=
+- 6 98==K  ÄÄ¿¿¿ADJUST_STRETCHmaxADJUST_ZOOMoyoxsysxmin	mathADJUST_FITgui#You must provide window height"You must provide window widthassertÄÄÄˇ
+
+
+
+WINDOW_WIDTH WINDOW_HEIGHT DISPLAY_WIDTH DISPLAY_HEIGHT GUI_ADJUST width  Kheight  Ksx =sy :adjust 6scale 1 :    §-   - J  ÄÄWINDOW_WIDTH WINDOW_HEIGHT  <    !´-   - J  ¿¿DISPLAY_WIDTH DISPLAY_HEIGHT  á 	 KØ9  6 -  8' B-  8  XÄ-  - 998 6 9 9 9 D ¿ ¿	zoom
+far_znear_zcamera_idDEFAULTPROJECTORUnknown projection idassertprojection_idprojectors M camera  projection_id projector_fn  Œ  ä∑6  99 B6 9 -  B!  XÄ 6 9 - B 6 9 - B6 9 	 
+ BL 	¿¿¿matrix4_look_atrotate
+vmathidget_world_rotationgo						
+OFFSET VECTOR3_MINUS1_Z VECTOR3_UP camera   camera_world_pos   offset   rot pos look_at 	up view  È  -é…6    ' B6   ' B-  < -  8 = =6 9 ' B=6 9 '	 B=	6 9 '
+ B=
+-  6 9  B A=-  B=K  ¿¿¿get_world_position	view
+far_znear_zprojectiongetgoprojection_idurlid)You must provide a camera script url!You must provide a camera idassert						
+
+
+
+
+
+
+
+cameras calculate_view calculate_projection camera_id  .camera_script_url  .settings  .camera ! n  €6    ' B-  +  < K  ¿!You must provide a camera idassertcameras camera_id  	 ≈ 	1ö◊ÍÄ6    ' B-  8   XÄK  6 9  B6 9  B!6 99' B  XÄ6 99' B6 99'		 B6 99	'
+
+ B6	 9		9
+' B	6
+ 9
+
+ B
+ 
+	
++  6 99' B6 99' B6 99' B6 99' B	  XÄ	  XÄ	  XÄ  X0Ä6 9 B 9!9 9 9!9
+ XÄ99
+!!=XÄ9
+ XÄ99
+! =9
+ XÄ99
+! =X
+Ä9
+ XÄ99
+!!=XÄ
+ 9=  XÄ9=  XÄ9=6 99' B-     B 9=6 99' B6 99'	 B6 99	'
+ B6	 9		9
+' B		  X
+Ä	  X
+Ä	  X
+Ä	  X
+TÄ-
+ 9
+
+  6 9 B A
+- 9  6 9	  )  B A- 9  6 9  )  B A- !-  99!-  XÄ9 =
+XÄ6 99
+9B=
+6 99
+9B=
+99!-  XÄ9 =
+XÄ6 99
+9B=
+6 99
+9B=
+- 9  
+ B 6
+ 9
+
+   B
+9
+  
+ X4Ä9
+ 9 9!!=!
+9
+ 9
+!
+)  
+ X
+
+Ä9
+ 9
+"
+ 
+ XÄ9
+ 9
+"
+B
++
+  =
+ X
+ Ä9
+ 9
+#
+ 
+ XÄ9
+ 9
+$
+- 9 9%"6 9&B"=
+9
+ 9
+'
+ 
+ XÄ9
+ 9
+$
+- 9 9%"6 9&B"=
+9
+( 
+ XÄ9
+(9(9)!=)
+9
+(9
+)
+)  
+ X
+Ä+
+  =
+(X
+Ä9
+(9
+)
+9(9!#
+
+9(6 9*
+ - 9(9$B=$+
+  9   XÄ9(  XÄ-
+ 9   XÄ9 9$ 
+
+9(  XÄ9(9$ 
+
+=
+$6 99', B=+6 99'- B=-6 99'. B=.6 99'/ B=/-   
+ B=0-  B=,K  ¿¿ ¿	¿¿¿
+¿¿¿	view	zoom
+far_znear_zprojectionprojection_id	lerptime_leftrecoilverticalrandomintensityoffsethorizontalcbduration
+shakeset_positionscreen_to_worldminmax	mathworld_to_screenbounds_rightbounds_bottombounds_leftbounds_topfollow_lerpzyxvector3
+vmathdeadzone_bottomdeadzone_rightdeadzone_leftdeadzone_topfollow_offsetfollow_targetfollow_verticalfollow_horizontalfollowurlgetget_positionget_world_positiongo!You must provide a camera idassert ÄÄÄˇ					
+
+   !!!!!!"""#####$&(())**,,--/////000000011444445555566666777778888888899999999::::::::::;;;;;;;;;;==>>@@@AAABBBBBDDDDDDEEEEEEHHHIIIJJJJJLLLLLLMMMMMMPPPPPPSSSSSVVVWWWWWXXXXXYYYYYYYZZZ\\\\]]]]]]]]]]]]____````````````eeefffffggggghhhjjjjjkkkkkkkkkoppppppqrrrsssuuuvvvyzzzzzz{{{{{{||||||}}}}}}~~~~~~Äcameras lerp_with_dt M OFFSET DISPLAY_WIDTH DISPLAY_HEIGHT VECTOR3_ZERO calculate_view calculate_projection camera_id  õdt  õcamera îcamera_world_pos çcamera_world_to_local_diff àfollow_enabled Éfollow_horizontal zfollow_vertical ufollow pfollow_offset ktarget_world_pos fnew_pos edeadzone_top `deadzone_left [deadzone_right Vdeadzone_bottom Qleft_edge (right_edge &top_edge $bottom_edge "follow_lerp 3	bounds_top ˝bounds_left ¯bounds_bottom Ûbounds_right Ócp Ltr 
+Bbl 
+8tr_offset 6bl_offset 4bounds_width 1bounds_height t k	offset 
+7 Œ  (èˆ6    ' B6   ' B, + + + 6	 
+ B		 X	Ä99999	X	Ä  6	
+ 9		-
+  8
+ 
+9
+
+' 5 ======	B	K  ¿target  followurl	postmsgimmediateverticalhorizontaloffset	lerp
+table	typeYou must provide a target!You must provide a camera idassert	
+
+
+
+
+cameras camera_id  )target  )options  )__offset  )lerp 
+offset  vertical horizontal immediate  ò  !ò6    ' B6 9-  8 9' BK  ¿unfollowurl	postmsg!You must provide a camera idassertcameras camera_id   ∑ 
+ [£6    ' B-  8   XÄ  XÄ  XÄ  XÄ6 99' 5	 =	=	=		=
+	BXÄ6 99' BK  ¿bottom
+righttop	left  deadzoneurl	postmsg!You must provide a camera idassertcameras camera_id   left   top   right   bottom   camera  µ 
+ [¥6    ' B-  8   XÄ  XÄ  XÄ  XÄ6 99' 5	 =	=	=		=
+	BXÄ6 99' BK  ¿bottom
+righttop	left  boundsurl	postmsg!You must provide a camera idassertcameras camera_id   left   top   right   bottom   camera  ¡ 	+j≈
+6    ' B-  8 5  XÄ*  = XÄ* =- 9 XÄ+ XÄ+ XÄ+ =- 9 XÄ+ XÄ+ XÄ+ =	6
+ 9)  B===K  ¿ ¿cboffsetvector3
+vmathverticalSHAKE_HORIZONTALhorizontalSHAKE_VERTICALdurationintensity  
+shake!You must provide a camera idassertµÊÃôô≥¶˝ÄÄÄˇ	
+cameras M camera_id  ,intensity  ,duration  ,direction  ,cb  , y  	‘6    ' B-  8 +  =K  ¿
+shake!You must provide a camera idassertcameras camera_id  
+ ‡ ;ﬁ6    ' B-  8 5 = XÄ*  = XÄ*  ==K  ¿time_leftdurationoffset  recoil#You must provide a strength idassertÄÄÄˇcameras camera_id  offset  duration   ¶ 
+ QÎ6    ' B6   ' B-  8 6 99' 5 =B=-  B=	K  ¿¿projection	zoom  zoom_tourl	postmsg"You must provide a zoom level!You must provide a camera idassertcameras calculate_projection camera_id  zoom  camera  s  ¯6    ' B-  8 9L ¿	zoom!You must provide a camera idassertcameras camera_id  	 y  Å6    ' B-  8 9L ¿projection!You must provide a camera idassertcameras camera_id  	 s  ã6    ' B-  8 9L ¿	view!You must provide a camera idassertcameras camera_id  	 ° 
+ Rì6    ' B-  8 9  XÄ- 9  XÄ- 6 9' ' 5 = 	==BK  ¿¿id  set_view_projection@render:	postmsgprojection	view!You must provide a camera idassertcameras MATRIX4 camera_id  camera view projection 
+ – 	 .û6    ' B-  8 6 9' ' 5 = 9=BK  ¿offsetid  set_camera_offset@render:	postmsg!You must provide a camera idassertcameras camera_id  camera 
+ Ÿ 	 Y≠6    ' B6   ' B-  8 9  XÄ- -  8 9  XÄ- - 9  6 9 B C ¿¿ ¿vector3
+vmathunprojectprojection	view3You must provide screen coordinates to convert!You must provide a camera idassertcameras MATRIX4 M camera_id  screen  view projection 	 ú 
+ .…Ω	6    ' B6   ' B-  8 9  XÄ- -  8 9  XÄ- 9- "- "- #9- "- "- #6 9  )	  B- 9	 	 
+ D ¿¿Ä¿Ä¿Ä ¿unprojectvector3
+vmathyxprojection	view3You must provide window coordinates to convert!You must provide a camera idassertcameras MATRIX4 dpi_ratio DISPLAY_WIDTH WINDOW_WIDTH DISPLAY_HEIGHT WINDOW_HEIGHT M camera_id  /window  /view  projection scale_x scale_y screen  ò 
+ 9ñŒ6    ' B6   ' B-  8 9  XÄ- -  8 9  XÄ- - 9  6 9	 B A  XÄ9- 89	#- 89
+!=9- 89#- 89!=6 9999	D ¿¿ ¿¿zoysyyoxsxxvector3
+vmathprojectprojection	view2You must provide world coordinates to convert!You must provide a camera idassert
+
+
+
+
+
+cameras MATRIX4 M GUI_ADJUST camera_id  :world  :adjust_mode  :view +projection %screen 	 ® ,p„
+6    ' B6   ' B6   ' B-  -  -  -  999	)
+ =
+=	==" -  "9 - "=9 - "=9 =L ¿ÄÄwzyx4You must provide world coordinates to translate"You must provide a projectionYou must provide a viewassert	v4_tmp WINDOW_WIDTH WINDOW_HEIGHT view  -projection  -world  -v4  ¸ -Ü	 -  # - #   9 "9" 9" 9 9"9" 9" 9 9"9	" 9
+" 9  	 
+ J ¿¿m23m22m21m20m13m12m11m10m03m02m01m00DISPLAY_WIDTH DISPLAY_HEIGHT inverse_view_projection  .x  .y  .z  .inv "x1 
+y1 
+z1 
+ ø 		 LÇ6    ' B6   ' B6   ' B6 9" B-   999B===L ¿zyxinv
+vmath5You must provide screen coordinates to translate"You must provide a projectionYou must provide a viewassertunproject_xyz view  projection  screen  inv 
+ …  -πè	6    ' B-  8 9  XÄ- -  8 9  XÄ- 6 9"B-  )  )  )  B-  - )	  )
+  B- 	 )
+  - )  B6
+ 9
+
+ 	   D
+ ¿¿¿¿¿vector4inv
+vmathprojection	view!You must provide a camera idassertcameras MATRIX4 unproject_xyz DISPLAY_WIDTH DISPLAY_HEIGHT camera_id  .view #projection inv bl_x bl_y  br_x br_y  tl_x tl_y   Œ  _ƒª õ4   6  9' ' B XÄ+ XÄ+ ) 6 ' B= 6 '	 B= 6 ' B=
+ 4  = 9 6 ' B=9 6 ' B=9 6 ' B=6 6  9' B A   XÄ)¿6 6  9' B A   XÄ)Ä6 6  9' B  XÄ6  9' BB	  XÄ)<   4 6	 9		5
+ <
+	6	 9		5
+ <
+	6	 9		5
+ <
+	6	 9		
+)  B	6
+ 9
+
+)  B
+6 9)  )  )ˇˇB6 9)  ) )  B6 9B6 9B6 9B4  4  9 93  <9 93! <9 93" <3# 3% =$ 3' =& 3) =( 3+ =* 3- =, 3/ =. 30 31 33 =2 35 =4 37 =6 39 =8 3; =: 3= =< 3? => 3A =@ 3C =B 3E =D 3G =F 3I =H 3K =J 3M =L 3O =N 3Q =P 3S =R 3U =T 3W =V 3Y =X 3Z 3\ =[ 3^ =] 2  ÄL   screen_to_world_bounds unproject  project world_to_screen window_to_world screen_to_world send_camera_offset send_view_projection get_view get_projection get_zoom set_zoom recoil stop_shaking 
+shake bounds deadzone unfollow follow update 
+final 	init   get_display_size get_window_size set_window_size set_window_scaling_factor use_projector add_projector    vector4matrix4vector3
+vmath ox sxoy syADJUST_STRETCH ox sxoy syADJUST_ZOOM ox sxoy syADJUST_FITguidisplay.frame_capdisplay.update_frequencydisplay.heightdisplay.widthtonumberFIXED_ZOOMFIXED_AUTODEFAULTPROJECTORverticalSHAKE_VERTICALhorizontalSHAKE_HORIZONTAL	both	hashSHAKE_BOTH10display.high_dpiget_configsys                 	 	 	 	 
+ 
+ 
+ 
+                                                                  ! ! ! ! ! ! # # # # $ $ $ $ $ $ % % % % % % ' ' ' ) ) ) * * * , 0 4 4 6 6 : : A A D D J J T ^ Z i c y r ü Å ¶ § ≠ ´ ¥ ¬ ’ … ﬁ € jÍ ìvõò´£º¥œ≈◊‘ÂﬁÚÎ˚¯"3-F=YNmcyâÇòèööM √HIGH_DPI 
+πdpi_ratio ∏DISPLAY_WIDTH &íDISPLAY_HEIGHT 	âUPDATE_FREQUENCY }WINDOW_WIDTH yWINDOW_HEIGHT xGUI_ADJUST kOFFSET eVECTOR3_ZERO aVECTOR3_MINUS1_Z [VECTOR3_UP UMATRIX4 Rv4_tmp Ov3_tmp Lcameras Kprojectors Jlerp_with_dt =calculate_projection 0calculate_view /unproject_xyz )  "ıwLJ=/orthographic/camera.luaò  	K46  9)  -  )  -	 
+  D ¿¿matrix4_orthographic
+vmathDISPLAY_WIDTH DISPLAY_HEIGHT camera_id  
+near_z  
+far_z  
+zoom  
+ ° %”:6  9-  - #- - #B"- "-  - ##- - ##- !  - !  6	 9		      D	 Ä¿Ä¿Ämatrix4_orthographic
+vmathmin	mathWINDOW_WIDTH DISPLAY_WIDTH WINDOW_HEIGHT DISPLAY_HEIGHT dpi_ratio camera_id  &near_z  &far_z  &zoom  &zoom_factor projected_width projected_height xoffset yoffset 	 Œ πD-  - ##- - ##- !  - !  6  9
+      D ÄÄÄ¿¿matrix4_orthographic
+vmathWINDOW_WIDTH dpi_ratio WINDOW_HEIGHT DISPLAY_WIDTH DISPLAY_HEIGHT camera_id  near_z  far_z  zoom  projected_width projected_height xoffset yoffset 	 ® =P-  6  9  B"6 96  9)	
+ "
+B  	 D Äpow	lerp
+vmath
+log10	mathUPDATE_FREQUENCY t  dt  v1  v2  rate  ∫  5Z6    ' B6   ' B-  < K  ¿*You must provide a projector function$You must provide a projector idassertprojectors projector_id  projector_fn   Ω 
+ Oc6    ' B6   ' B6  -  8' B- 8 6 99' 5 =	BK  ¿¿projection  use_projectionurl	postmsgUnknown projection id$You must provide a projector id!You must provide a camera idassertprojectors cameras camera_id  projector_id  camera  ô 1r6    ' B-    XÄ  . XÄ0  K  ¿Ä&You must provide a scaling factorassertHIGH_DPI dpi_ratio scaling_factor   Ö 
+J∫Å6    ' B6   ' B.   . -  - #- - #- 6 986 9  B==-  - "! #=	- - "! #=
+- 6 986 9 	 B ==-  - "! #=	- - "! #=
+- 6 98==K  ÄÄ¿¿¿ADJUST_STRETCHmaxADJUST_ZOOMoyoxsysxmin	mathADJUST_FITgui#You must provide window height"You must provide window widthassertÄÄÄˇ
+
+
+
+WINDOW_WIDTH WINDOW_HEIGHT DISPLAY_WIDTH DISPLAY_HEIGHT GUI_ADJUST width  Kheight  Ksx =sy :adjust 6scale 1 :    §-   - J  ÄÄWINDOW_WIDTH WINDOW_HEIGHT  <    !´-   - J  ¿¿DISPLAY_WIDTH DISPLAY_HEIGHT  á 		 KØ9  6 -  8' B-  8  XÄ-  - 998 6 9 9 9 D ¿ ¿	zoom
+far_znear_zcamera_idDEFAULTPROJECTORUnknown projection idassertprojection_idprojectors M camera  projection_id projector_fn  Œ  ä∑6  99 B6 9 -  B!  XÄ 6 9 - B 6 9 -	 B6 9	 
+  BL 	¿¿¿matrix4_look_atrotate
+vmathidget_world_rotationgo						
+OFFSET VECTOR3_MINUS1_Z VECTOR3_UP camera   camera_world_pos   offset   rot pos look_at 	up view  È 
+ -é…6    ' B6   ' B-  < -  8 = =6 9 ' B=6 9 '	 B=	6 9 '
+ B=
+-  6 9	  B A=-  B=K  ¿¿¿get_world_position	view
+far_znear_zprojectiongetgoprojection_idurlid)You must provide a camera script url!You must provide a camera idassert						
+
+
+
+
+
+
+
+cameras calculate_view calculate_projection camera_id  .camera_script_url  .settings  .camera ! n  €6    ' B-  +  < K  ¿!You must provide a camera idassertcameras camera_id  	 ≈ 	1ö◊ÍÄ6    ' B-  8   XÄK  6 9  B6 9  B!6 99' B  XÄ6 99'	 B6 99	'
+	 B6 99
+'
+ B6	 9		9' B	6
+ 9
+
+ B
+ 
+	
++  6 99' B6 99' B6 99' B6 99' B	  XÄ	  XÄ	  XÄ  X0Ä6 9 B 9!9 9 9!9
+ XÄ99
+!!=XÄ9
+ XÄ99
+! =9
+ XÄ99
+! =X
+Ä9
+ XÄ99
+!!=XÄ
+ 9=  XÄ9=  XÄ9=6 99' B-     B 9=6 99'	 B6 99	'
+ B6 99
+' B6	 9		9' B		  X
+Ä	  X
+Ä	  X
+Ä	  X
+TÄ-
+ 9
+
+  6 9 B A
+- 9  6 9	  )  B A- 9  6 9  )  B A- !-  99!-  XÄ9 =
+XÄ6 99
+9B=
+6 99
+9B=
+99!-  XÄ9 =
+XÄ6 99
+9B=
+6 99
+9B=
+- 9  
+ B 6
+ 9
+
+   B
+9
+  
+ X4Ä9
+ 9 9!!=!
+9
+ 9
+!
+)  
+ X
+
+Ä9
+ 9
+"
+ 
+ XÄ9
+ 9
+"
+B
++
+  =
+ X
+ Ä9
+ 9
+#
+ 
+ XÄ9
+ 9
+$
+- 9 9%"6 9&B"=
+9
+ 9
+'
+ 
+ XÄ9
+ 9
+$
+- 9 9%"6 9&B"=
+9
+( 
+ XÄ9
+(9(9)!=)
+9
+(9
+)
+)  
+ X
+Ä+
+  =
+(X
+Ä9
+(9
+)
+9(9!#
+
+9(6 9*
+ - 9(9$B=$+
+  9   XÄ9(  XÄ-
+ 9   XÄ9 9$ 
+
+9(  XÄ9(9$ 
+
+=
+$6 99', B=+6 99'- B=-6 99'. B=.6 99'/ B=/-   
+ B=0-  B=,K  ¿¿ ¿	¿¿¿
+¿¿¿	view	zoom
+far_znear_zprojectionprojection_id	lerptime_leftrecoilverticalrandomintensityoffsethorizontalcbduration
+shakeset_positionscreen_to_worldminmax	mathworld_to_screenbounds_rightbounds_bottombounds_leftbounds_topfollow_lerpzyxvector3
+vmathdeadzone_bottomdeadzone_rightdeadzone_leftdeadzone_topfollow_offsetfollow_targetfollow_verticalfollow_horizontalfollowurlgetget_positionget_world_positiongo!You must provide a camera idassert ÄÄÄˇ					
+
+   !!!!!!"""#####$&(())**,,--/////000000011444445555566666777778888888899999999::::::::::;;;;;;;;;;==>>@@@AAABBBBBDDDDDDEEEEEEHHHIIIJJJJJLLLLLLMMMMMMPPPPPPSSSSSVVVWWWWWXXXXXYYYYYYYZZZ\\\\]]]]]]]]]]]]____````````````eeefffffggggghhhjjjjjkkkkkkkkkoppppppqrrrsssuuuvvvyzzzzzz{{{{{{||||||}}}}}}~~~~~~Äcameras lerp_with_dt M OFFSET DISPLAY_WIDTH DISPLAY_HEIGHT VECTOR3_ZERO calculate_view calculate_projection camera_id  õdt  õcamera îcamera_world_pos çcamera_world_to_local_diff àfollow_enabled Éfollow_horizontal zfollow_vertical ufollow pfollow_offset ktarget_world_pos fnew_pos edeadzone_top `deadzone_left [deadzone_right Vdeadzone_bottom Qleft_edge (right_edge &top_edge $bottom_edge "follow_lerp 3	bounds_top ˝bounds_left ¯bounds_bottom Ûbounds_right Ócp Ltr 
+Bbl 
+8tr_offset 6bl_offset 4bounds_width 1bounds_height t k	offset 
+7 Œ  (èˆ6    ' B6   ' B, + + + 6	  B		 X	Ä99999	X	Ä  6	
+ 9		-  8 9' 5 ======	B	K  ¿target  followurl	postmsgimmediateverticalhorizontaloffset	lerp
+table	typeYou must provide a target!You must provide a camera idassert	
+
+
+
+
+cameras camera_id  )target  )options  )__offset  )lerp 
+offset  vertical horizontal immediate  ò  !ò6    ' B6 9-  8 9' BK  ¿unfollowurl	postmsg!You must provide a camera idassertcameras camera_id   ∑  [£6    ' B-  8   XÄ  XÄ  XÄ  XÄ6 99'	 5
+ =
+=
+=	
+=
+
+BXÄ6 99'	 BK  ¿bottom
+righttop	left  deadzoneurl	postmsg!You must provide a camera idassertcameras camera_id   left   top   right   bottom   camera  µ  [¥6    ' B-  8   XÄ  XÄ  XÄ  XÄ6 99'	 5
+ =
+=
+=	
+=
+
+BXÄ6 99'	 BK  ¿bottom
+righttop	left  boundsurl	postmsg!You must provide a camera idassertcameras camera_id   left   top   right   bottom   camera  ¡ 
++j≈
+6    ' B-  8 5  XÄ*  = XÄ* =- 9 XÄ+ XÄ+ XÄ+ =- 9 XÄ+ XÄ+ XÄ+ =	6
+ 9)	  B===K  ¿ ¿cboffsetvector3
+vmathverticalSHAKE_HORIZONTALhorizontalSHAKE_VERTICALdurationintensity  
+shake!You must provide a camera idassertµÊÃôô≥¶˝ÄÄÄˇ	
+cameras M camera_id  ,intensity  ,duration  ,direction  ,cb  , y  	‘6    ' B-  8 +  =K  ¿
+shake!You must provide a camera idassertcameras camera_id  
+ ‡ ;ﬁ6    ' B-  8 5 = XÄ*  = XÄ*  ==K  ¿time_leftdurationoffset  recoil#You must provide a strength idassertÄÄÄˇcameras camera_id  offset  duration   ¶ 
+ QÎ6    ' B6   ' B-  8 6 99' 5 =B=-  B=	K  ¿¿projection	zoom  zoom_tourl	postmsg"You must provide a zoom level!You must provide a camera idassertcameras calculate_projection camera_id  zoom  camera  s  ¯6    ' B-  8 9L ¿	zoom!You must provide a camera idassertcameras camera_id  	 y  Å6    ' B-  8 9L ¿projection!You must provide a camera idassertcameras camera_id  	 s  ã6    ' B-  8 9L ¿	view!You must provide a camera idassertcameras camera_id  	 ° 	
+ Rì6    ' B-  8 9  XÄ- 9  XÄ- 6 9' ' 5 = 	==BK  ¿¿id  set_view_projection@render:	postmsgprojection	view!You must provide a camera idassertcameras MATRIX4 camera_id  camera view projection 
+ – 	 .û6    ' B-  8 6 9' ' 5 = 9=BK  ¿offsetid  set_camera_offset@render:	postmsg!You must provide a camera idassertcameras camera_id  camera 
+ Ÿ  Y≠6    ' B6   ' B-  8 9  XÄ- -  8 9  XÄ- - 9  6 9
+ B C ¿¿ ¿vector3
+vmathunprojectprojection	view3You must provide screen coordinates to convert!You must provide a camera idassertcameras MATRIX4 M camera_id  screen  view projection 	 ú 
+ .…Ω	6    ' B6   ' B-  8 9  XÄ- -  8 9  XÄ- 9- "- "- #9- "- "- #6 9 	 )
+  B- 9		 
+  D ¿¿Ä¿Ä¿Ä ¿unprojectvector3
+vmathyxprojection	view3You must provide window coordinates to convert!You must provide a camera idassertcameras MATRIX4 dpi_ratio DISPLAY_WIDTH WINDOW_WIDTH DISPLAY_HEIGHT WINDOW_HEIGHT M camera_id  /window  /view  projection scale_x scale_y screen  ò  9ñŒ6    ' B6   ' B-  8 9  XÄ- -  8 9  XÄ- - 9  6	 9		 B	 A  XÄ9- 89	#- 89
+!=9- 89#- 89!=6 999	9
+D ¿¿ ¿¿zoysyyoxsxxvector3
+vmathprojectprojection	view2You must provide world coordinates to convert!You must provide a camera idassert
+
+
+
+
+
+cameras MATRIX4 M GUI_ADJUST camera_id  :world  :adjust_mode  :view +projection %screen 	 ® ,p„
+6    ' B6   ' B6   ' B-  -  -  -  999	)
+ =
+=	==" -  "9 - "=9 - "=9 =L ¿ÄÄwzyx4You must provide world coordinates to translate"You must provide a projectionYou must provide a viewassert	v4_tmp WINDOW_WIDTH WINDOW_HEIGHT view  -projection  -world  -v4  ¸ -Ü	 -  # - #   9 "9" 9" 9 9"9" 9" 9 9"9	" 9
+" 9  	 
+ J ¿¿m23m22m21m20m13m12m11m10m03m02m01m00DISPLAY_WIDTH DISPLAY_HEIGHT inverse_view_projection  .x  .y  .z  .inv "x1 
+y1 
+z1 
+ ø 
+	 LÇ6    ' B6   ' B6   ' B6 9" B-   999	B===L ¿zyxinv
+vmath5You must provide screen coordinates to translate"You must provide a projectionYou must provide a viewassertunproject_xyz view  projection  screen  inv 
+ …  -πè	6    ' B-  8 9  XÄ- -  8 9  XÄ- 6 9"B-  )  )  )	  B-  -	 )
+  )  B- 
+ )  - )  B6
+ 9
+
+ 	   D
+ ¿¿¿¿¿vector4inv
+vmathprojection	view!You must provide a camera idassertcameras MATRIX4 unproject_xyz DISPLAY_WIDTH DISPLAY_HEIGHT camera_id  .view #projection inv bl_x bl_y  br_x br_y  tl_x tl_y   Œ  _ƒª õ4   6  9' ' B XÄ+ XÄ+ ) 6 ' B= 6 '	 B= 6 ' B=
+ 4  = 9 6 ' B=9 6 ' B=9 6 ' B=6 6  9' B A   XÄ)¿6 6  9' B A   XÄ)Ä6 6  9'	 B  XÄ6  9'	 BB	  XÄ)<   4 6	 9		5
+ <
+	6	 9		5
+ <
+	6	 9		5
+ <
+	6	 9		)  B	6
+ 9
+
+)  B
+6 9)  )  )ˇˇB6 9)  ) )  B6 9B6 9B6 9B4  4  9 93  <9 93! <9 93" <3# 3% =$ 3' =& 3) =( 3+ =* 3- =, 3/ =. 30 31 33 =2 35 =4 37 =6 39 =8 3; =: 3= =< 3? => 3A =@ 3C =B 3E =D 3G =F 3I =H 3K =J 3M =L 3O =N 3Q =P 3S =R 3U =T 3W =V 3Y =X 3Z 3\ =[ 3^ =] 2  ÄL   screen_to_world_bounds unproject  project world_to_screen window_to_world screen_to_world send_camera_offset send_view_projection get_view get_projection get_zoom set_zoom recoil stop_shaking 
+shake bounds deadzone unfollow follow update 
+final 	init   get_display_size get_window_size set_window_size set_window_scaling_factor use_projector add_projector    vector4matrix4vector3
+vmath ox sxoy syADJUST_STRETCH ox sxoy syADJUST_ZOOM ox sxoy syADJUST_FITguidisplay.frame_capdisplay.update_frequencydisplay.heightdisplay.widthtonumberFIXED_ZOOMFIXED_AUTODEFAULTPROJECTORverticalSHAKE_VERTICALhorizontalSHAKE_HORIZONTAL	both	hashSHAKE_BOTH10display.high_dpiget_configsys                 	 	 	 	 
+ 
+ 
+ 
+                                                                  ! ! ! ! ! ! # # # # $ $ $ $ $ $ % % % % % % ' ' ' ) ) ) * * * , 0 4 4 6 6 : : A A D D J J T ^ Z i c y r ü Å ¶ § ≠ ´ ¥ ¬ ’ … ﬁ € jÍ ìvõò´£º¥œ≈◊‘ÂﬁÚÎ˚¯"3-F=YNmcyâÇòèööM √HIGH_DPI 
+πdpi_ratio ∏DISPLAY_WIDTH &íDISPLAY_HEIGHT 	âUPDATE_FREQUENCY }WINDOW_WIDTH yWINDOW_HEIGHT xGUI_ADJUST kOFFSET eVECTOR3_ZERO aVECTOR3_MINUS1_Z [VECTOR3_UP UMATRIX4 Rv4_tmp Ov3_tmp Lcameras Kprojectors Jlerp_with_dt =calculate_projection 0calculate_view /unproject_xyz )  " 

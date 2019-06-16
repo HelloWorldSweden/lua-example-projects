@@ -1,0 +1,17 @@
+local points = 0
+
+function init(self)
+    set_text(points)
+end
+
+function on_message(self, message_id, message, sender)
+	if message_id == hash("candy_crushed") then
+		points = points + 1
+		set_text(points)
+	end
+end
+
+function set_text(points)
+    text = "Points: " .. points
+	gui.set_text(gui.get_node("text"), text)
+end

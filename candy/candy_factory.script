@@ -1,0 +1,19 @@
+function init(self)
+	math.randomseed(os.time())
+	math.random()
+	create_candy()
+end
+
+function on_message(self, message_id, message, sender)
+	if message_id == hash("candy_crushed") then
+		create_candy()
+	end
+end
+
+function create_candy()
+	local position = vmath.vector3()
+	position.x = 0
+	position.y = 0
+	
+	factory.create("game:/factory#candy_factory", position)
+end

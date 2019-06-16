@@ -1,0 +1,492 @@
+images {
+  image: "/candy/images/polka_swirl_candy/polka_swirl_candy.png"
+}
+images {
+  image: "/candy/images/green_swirl_candy/green_swirl_candy.png"
+}
+images {
+  image: "/candy/images/rainbow_swirl_candy/rainbow_swirl_candy.png"
+}
+images {
+  image: "/candy/images/pink_candy_swirl/pink_candy_swirl.png"
+}
+images {
+  image: "/candy/images/lemon_candy/lemon_candy.png"
+}
+images {
+  image: "/candy/images/tropic_swirl_candy/tropic_swirl_candy.png"
+}
+animations {
+  id: "polka_swirl_candy_explosion"
+  images {
+    image: "/candy/images/polka_swirl_candy/polka_swirl_candy01.png"
+  }
+  images {
+    image: "/candy/images/polka_swirl_candy/polka_swirl_candy02.png"
+  }
+  images {
+    image: "/candy/images/polka_swirl_candy/polka_swirl_candy03.png"
+  }
+  images {
+    image: "/candy/images/polka_swirl_candy/polka_swirl_candy04.png"
+  }
+  images {
+    image: "/candy/images/polka_swirl_candy/polka_swirl_candy05.png"
+  }
+  images {
+    image: "/candy/images/polka_swirl_candy/polka_swirl_candy06.png"
+  }
+  images {
+    image: "/candy/images/polka_swirl_candy/polka_swirl_candy07.png"
+  }
+  images {
+    image: "/candy/images/polka_swirl_candy/polka_swirl_candy08.png"
+  }
+  images {
+    image: "/candy/images/polka_swirl_candy/polka_swirl_candy09.png"
+  }
+  images {
+    image: "/candy/images/polka_swirl_candy/polka_swirl_candy10.png"
+  }
+  images {
+    image: "/candy/images/polka_swirl_candy/polka_swirl_candy11.png"
+  }
+  images {
+    image: "/candy/images/polka_swirl_candy/polka_swirl_candy12.png"
+  }
+  images {
+    image: "/candy/images/polka_swirl_candy/polka_swirl_candy13.png"
+  }
+  images {
+    image: "/candy/images/polka_swirl_candy/polka_swirl_candy14.png"
+  }
+  images {
+    image: "/candy/images/polka_swirl_candy/polka_swirl_candy15.png"
+  }
+  images {
+    image: "/candy/images/polka_swirl_candy/polka_swirl_candy16.png"
+  }
+  images {
+    image: "/candy/images/polka_swirl_candy/polka_swirl_candy17.png"
+  }
+  images {
+    image: "/candy/images/polka_swirl_candy/polka_swirl_candy18.png"
+  }
+  images {
+    image: "/candy/images/polka_swirl_candy/polka_swirl_candy19.png"
+  }
+  images {
+    image: "/candy/images/polka_swirl_candy/polka_swirl_candy20.png"
+  }
+  images {
+    image: "/candy/images/polka_swirl_candy/polka_swirl_candy21.png"
+  }
+  images {
+    image: "/candy/images/polka_swirl_candy/polka_swirl_candy22.png"
+  }
+  images {
+    image: "/candy/images/polka_swirl_candy/polka_swirl_candy23.png"
+  }
+  playback: PLAYBACK_ONCE_FORWARD
+  fps: 60
+  flip_horizontal: 0
+  flip_vertical: 0
+}
+animations {
+  id: "green_swirl_candy_explosion"
+  images {
+    image: "/candy/images/green_swirl_candy/green_swirl_candy01.png"
+  }
+  images {
+    image: "/candy/images/green_swirl_candy/green_swirl_candy02.png"
+  }
+  images {
+    image: "/candy/images/green_swirl_candy/green_swirl_candy03.png"
+  }
+  images {
+    image: "/candy/images/green_swirl_candy/green_swirl_candy04.png"
+  }
+  images {
+    image: "/candy/images/green_swirl_candy/green_swirl_candy05.png"
+  }
+  images {
+    image: "/candy/images/green_swirl_candy/green_swirl_candy06.png"
+  }
+  images {
+    image: "/candy/images/green_swirl_candy/green_swirl_candy07.png"
+  }
+  images {
+    image: "/candy/images/green_swirl_candy/green_swirl_candy08.png"
+  }
+  images {
+    image: "/candy/images/green_swirl_candy/green_swirl_candy09.png"
+  }
+  images {
+    image: "/candy/images/green_swirl_candy/green_swirl_candy10.png"
+  }
+  images {
+    image: "/candy/images/green_swirl_candy/green_swirl_candy11.png"
+  }
+  images {
+    image: "/candy/images/green_swirl_candy/green_swirl_candy12.png"
+  }
+  images {
+    image: "/candy/images/green_swirl_candy/green_swirl_candy13.png"
+  }
+  images {
+    image: "/candy/images/green_swirl_candy/green_swirl_candy14.png"
+  }
+  images {
+    image: "/candy/images/green_swirl_candy/green_swirl_candy15.png"
+  }
+  images {
+    image: "/candy/images/green_swirl_candy/green_swirl_candy16.png"
+  }
+  images {
+    image: "/candy/images/green_swirl_candy/green_swirl_candy17.png"
+  }
+  images {
+    image: "/candy/images/green_swirl_candy/green_swirl_candy18.png"
+  }
+  images {
+    image: "/candy/images/green_swirl_candy/green_swirl_candy19.png"
+  }
+  images {
+    image: "/candy/images/green_swirl_candy/green_swirl_candy20.png"
+  }
+  images {
+    image: "/candy/images/green_swirl_candy/green_swirl_candy21.png"
+  }
+  images {
+    image: "/candy/images/green_swirl_candy/green_swirl_candy22.png"
+  }
+  images {
+    image: "/candy/images/green_swirl_candy/green_swirl_candy23.png"
+  }
+  images {
+    image: "/candy/images/green_swirl_candy/green_swirl_candy24.png"
+  }
+  playback: PLAYBACK_ONCE_FORWARD
+  fps: 60
+  flip_horizontal: 0
+  flip_vertical: 0
+}
+animations {
+  id: "rainbow_swirl_candy_explosion"
+  images {
+    image: "/candy/images/rainbow_swirl_candy/rainbow_swirl_candy01.png"
+  }
+  images {
+    image: "/candy/images/rainbow_swirl_candy/rainbow_swirl_candy02.png"
+  }
+  images {
+    image: "/candy/images/rainbow_swirl_candy/rainbow_swirl_candy03.png"
+  }
+  images {
+    image: "/candy/images/rainbow_swirl_candy/rainbow_swirl_candy04.png"
+  }
+  images {
+    image: "/candy/images/rainbow_swirl_candy/rainbow_swirl_candy05.png"
+  }
+  images {
+    image: "/candy/images/rainbow_swirl_candy/rainbow_swirl_candy06.png"
+  }
+  images {
+    image: "/candy/images/rainbow_swirl_candy/rainbow_swirl_candy07.png"
+  }
+  images {
+    image: "/candy/images/rainbow_swirl_candy/rainbow_swirl_candy08.png"
+  }
+  images {
+    image: "/candy/images/rainbow_swirl_candy/rainbow_swirl_candy09.png"
+  }
+  images {
+    image: "/candy/images/rainbow_swirl_candy/rainbow_swirl_candy10.png"
+  }
+  images {
+    image: "/candy/images/rainbow_swirl_candy/rainbow_swirl_candy11.png"
+  }
+  images {
+    image: "/candy/images/rainbow_swirl_candy/rainbow_swirl_candy12.png"
+  }
+  images {
+    image: "/candy/images/rainbow_swirl_candy/rainbow_swirl_candy13.png"
+  }
+  images {
+    image: "/candy/images/rainbow_swirl_candy/rainbow_swirl_candy14.png"
+  }
+  images {
+    image: "/candy/images/rainbow_swirl_candy/rainbow_swirl_candy15.png"
+  }
+  images {
+    image: "/candy/images/rainbow_swirl_candy/rainbow_swirl_candy16.png"
+  }
+  images {
+    image: "/candy/images/rainbow_swirl_candy/rainbow_swirl_candy17.png"
+  }
+  images {
+    image: "/candy/images/rainbow_swirl_candy/rainbow_swirl_candy18.png"
+  }
+  images {
+    image: "/candy/images/rainbow_swirl_candy/rainbow_swirl_candy19.png"
+  }
+  images {
+    image: "/candy/images/rainbow_swirl_candy/rainbow_swirl_candy20.png"
+  }
+  images {
+    image: "/candy/images/rainbow_swirl_candy/rainbow_swirl_candy21.png"
+  }
+  images {
+    image: "/candy/images/rainbow_swirl_candy/rainbow_swirl_candy22.png"
+  }
+  images {
+    image: "/candy/images/rainbow_swirl_candy/rainbow_swirl_candy23.png"
+  }
+  images {
+    image: "/candy/images/rainbow_swirl_candy/rainbow_swirl_candy24.png"
+  }
+  playback: PLAYBACK_ONCE_FORWARD
+  fps: 60
+  flip_horizontal: 0
+  flip_vertical: 0
+}
+animations {
+  id: "pink_candy_swirl_explosion"
+  images {
+    image: "/candy/images/pink_candy_swirl/pink_candy_swirl0001.png"
+  }
+  images {
+    image: "/candy/images/pink_candy_swirl/pink_candy_swirl0002.png"
+  }
+  images {
+    image: "/candy/images/pink_candy_swirl/pink_candy_swirl0003.png"
+  }
+  images {
+    image: "/candy/images/pink_candy_swirl/pink_candy_swirl0004.png"
+  }
+  images {
+    image: "/candy/images/pink_candy_swirl/pink_candy_swirl0005.png"
+  }
+  images {
+    image: "/candy/images/pink_candy_swirl/pink_candy_swirl0006.png"
+  }
+  images {
+    image: "/candy/images/pink_candy_swirl/pink_candy_swirl0007.png"
+  }
+  images {
+    image: "/candy/images/pink_candy_swirl/pink_candy_swirl0008.png"
+  }
+  images {
+    image: "/candy/images/pink_candy_swirl/pink_candy_swirl0009.png"
+  }
+  images {
+    image: "/candy/images/pink_candy_swirl/pink_candy_swirl0010.png"
+  }
+  images {
+    image: "/candy/images/pink_candy_swirl/pink_candy_swirl0011.png"
+  }
+  images {
+    image: "/candy/images/pink_candy_swirl/pink_candy_swirl0012.png"
+  }
+  images {
+    image: "/candy/images/pink_candy_swirl/pink_candy_swirl0013.png"
+  }
+  images {
+    image: "/candy/images/pink_candy_swirl/pink_candy_swirl0014.png"
+  }
+  images {
+    image: "/candy/images/pink_candy_swirl/pink_candy_swirl0015.png"
+  }
+  images {
+    image: "/candy/images/pink_candy_swirl/pink_candy_swirl0016.png"
+  }
+  images {
+    image: "/candy/images/pink_candy_swirl/pink_candy_swirl0017.png"
+  }
+  images {
+    image: "/candy/images/pink_candy_swirl/pink_candy_swirl0018.png"
+  }
+  images {
+    image: "/candy/images/pink_candy_swirl/pink_candy_swirl0019.png"
+  }
+  images {
+    image: "/candy/images/pink_candy_swirl/pink_candy_swirl0020.png"
+  }
+  images {
+    image: "/candy/images/pink_candy_swirl/pink_candy_swirl0021.png"
+  }
+  images {
+    image: "/candy/images/pink_candy_swirl/pink_candy_swirl0022.png"
+  }
+  images {
+    image: "/candy/images/pink_candy_swirl/pink_candy_swirl0023.png"
+  }
+  images {
+    image: "/candy/images/pink_candy_swirl/pink_candy_swirl0024.png"
+  }
+  playback: PLAYBACK_ONCE_FORWARD
+  fps: 60
+  flip_horizontal: 0
+  flip_vertical: 0
+}
+animations {
+  id: "lemon_candy_explosion"
+  images {
+    image: "/candy/images/lemon_candy/lemon_candy0001.png"
+  }
+  images {
+    image: "/candy/images/lemon_candy/lemon_candy0002.png"
+  }
+  images {
+    image: "/candy/images/lemon_candy/lemon_candy0003.png"
+  }
+  images {
+    image: "/candy/images/lemon_candy/lemon_candy0004.png"
+  }
+  images {
+    image: "/candy/images/lemon_candy/lemon_candy0005.png"
+  }
+  images {
+    image: "/candy/images/lemon_candy/lemon_candy0006.png"
+  }
+  images {
+    image: "/candy/images/lemon_candy/lemon_candy0007.png"
+  }
+  images {
+    image: "/candy/images/lemon_candy/lemon_candy0008.png"
+  }
+  images {
+    image: "/candy/images/lemon_candy/lemon_candy0009.png"
+  }
+  images {
+    image: "/candy/images/lemon_candy/lemon_candy0010.png"
+  }
+  images {
+    image: "/candy/images/lemon_candy/lemon_candy0011.png"
+  }
+  images {
+    image: "/candy/images/lemon_candy/lemon_candy0012.png"
+  }
+  images {
+    image: "/candy/images/lemon_candy/lemon_candy0013.png"
+  }
+  images {
+    image: "/candy/images/lemon_candy/lemon_candy0014.png"
+  }
+  images {
+    image: "/candy/images/lemon_candy/lemon_candy0015.png"
+  }
+  images {
+    image: "/candy/images/lemon_candy/lemon_candy0016.png"
+  }
+  images {
+    image: "/candy/images/lemon_candy/lemon_candy0017.png"
+  }
+  images {
+    image: "/candy/images/lemon_candy/lemon_candy0018.png"
+  }
+  images {
+    image: "/candy/images/lemon_candy/lemon_candy0019.png"
+  }
+  images {
+    image: "/candy/images/lemon_candy/lemon_candy0020.png"
+  }
+  images {
+    image: "/candy/images/lemon_candy/lemon_candy0021.png"
+  }
+  images {
+    image: "/candy/images/lemon_candy/lemon_candy0022.png"
+  }
+  images {
+    image: "/candy/images/lemon_candy/lemon_candy0023.png"
+  }
+  images {
+    image: "/candy/images/lemon_candy/lemon_candy0024.png"
+  }
+  playback: PLAYBACK_ONCE_FORWARD
+  fps: 60
+  flip_horizontal: 0
+  flip_vertical: 0
+}
+animations {
+  id: "tropic_swirl_candy_explosion"
+  images {
+    image: "/candy/images/tropic_swirl_candy/tropic_swirl_candy0001.png"
+  }
+  images {
+    image: "/candy/images/tropic_swirl_candy/tropic_swirl_candy0002.png"
+  }
+  images {
+    image: "/candy/images/tropic_swirl_candy/tropic_swirl_candy0003.png"
+  }
+  images {
+    image: "/candy/images/tropic_swirl_candy/tropic_swirl_candy0004.png"
+  }
+  images {
+    image: "/candy/images/tropic_swirl_candy/tropic_swirl_candy0005.png"
+  }
+  images {
+    image: "/candy/images/tropic_swirl_candy/tropic_swirl_candy0006.png"
+  }
+  images {
+    image: "/candy/images/tropic_swirl_candy/tropic_swirl_candy0007.png"
+  }
+  images {
+    image: "/candy/images/tropic_swirl_candy/tropic_swirl_candy0008.png"
+  }
+  images {
+    image: "/candy/images/tropic_swirl_candy/tropic_swirl_candy0009.png"
+  }
+  images {
+    image: "/candy/images/tropic_swirl_candy/tropic_swirl_candy0010.png"
+  }
+  images {
+    image: "/candy/images/tropic_swirl_candy/tropic_swirl_candy0011.png"
+  }
+  images {
+    image: "/candy/images/tropic_swirl_candy/tropic_swirl_candy0012.png"
+  }
+  images {
+    image: "/candy/images/tropic_swirl_candy/tropic_swirl_candy0013.png"
+  }
+  images {
+    image: "/candy/images/tropic_swirl_candy/tropic_swirl_candy0014.png"
+  }
+  images {
+    image: "/candy/images/tropic_swirl_candy/tropic_swirl_candy0015.png"
+  }
+  images {
+    image: "/candy/images/tropic_swirl_candy/tropic_swirl_candy0016.png"
+  }
+  images {
+    image: "/candy/images/tropic_swirl_candy/tropic_swirl_candy0017.png"
+  }
+  images {
+    image: "/candy/images/tropic_swirl_candy/tropic_swirl_candy0018.png"
+  }
+  images {
+    image: "/candy/images/tropic_swirl_candy/tropic_swirl_candy0019.png"
+  }
+  images {
+    image: "/candy/images/tropic_swirl_candy/tropic_swirl_candy0020.png"
+  }
+  images {
+    image: "/candy/images/tropic_swirl_candy/tropic_swirl_candy0021.png"
+  }
+  images {
+    image: "/candy/images/tropic_swirl_candy/tropic_swirl_candy0022.png"
+  }
+  images {
+    image: "/candy/images/tropic_swirl_candy/tropic_swirl_candy0023.png"
+  }
+  images {
+    image: "/candy/images/tropic_swirl_candy/tropic_swirl_candy0024.png"
+  }
+  playback: PLAYBACK_ONCE_FORWARD
+  fps: 60
+  flip_horizontal: 0
+  flip_vertical: 0
+}
+margin: 0
+extrude_borders: 0
+inner_padding: 0

@@ -1,0 +1,17 @@
+function init(self)
+    move_candy()
+end
+
+function move_candy()
+    local animation_length = 1
+    
+    local destination = go.get_position()
+    destination.x = destination.x + 100
+    
+    -- go.animate(".", "position", go.PLAYBACK_LOOP_PINGPONG, destination, go.EASING_LINEAR, animation_length)
+end
+
+function delete_candy()
+    go.delete(candy)
+    create_candy()
+end
