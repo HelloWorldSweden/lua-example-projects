@@ -1,0 +1,6 @@
+images {
+  image: "/Space_Cleaner/PNG/Lasers/red/laserRed01.png"
+}
+margin: 0
+extrude_borders: 0
+inner_padding: 0

@@ -1,0 +1,84 @@
+local min_y = 50
+local max_y = 700
+local max_x = 1200
+local min_x = 10
+
+function init(self)
+	msg.post(".", "acquire_input_focus")
+end
+
+function on_input(self, action_id, action)
+	local position = go.get_position()
+	if action_id == hash("up") then
+		position.y = position.y + 10
+	elseif action_id == hash("left") then
+		position.x = position.x - 10
+	end
+	go.set_position(position)
+end
+
+function fire()
+	local component = "#bullet_factory"
+	local pos = go.get_position()
+	local id = factory.create(component, pos, vmath.quat_rotation_z(0))
+	go.animate(id, "position.x", go.PLAYBACK_ONCE_FORWARD, pos.x + 1000, go.EASING_LINEAR, 1, 0, function()
+		go.delete(id)
+	end)
+end
+
+function update(self, dt)
+	local p = go.get_position()
+	if p.y < min_y then
+		p.y = min_y
+	elseif p.y > max_y then
+		p.y = max_y
+	end
+	if p.x < min_x then
+		p.x = min_x
+	elseif p.x > max_x then
+		p.x = max_x
+	end
+	go.set_position(p)
+end
+
+function on_input(self, action_id, action)
+	if action_id == hash("shoot") and action.pressed then
+		fire()
+	end
+end
+
+function on_message(self, message_id, message, sender)
+	if message_id == hash("collision_response") then
+		if message.other_group == hash("booster") then
+			local autofire = true
+			timer.delay(5, false, function()
+				autofire = false
+			end)
+			timer.delay(0.2, true, function(self, handle, time)
+				if autofire then
+					fire()
+				else
+					timer.cancel(handle)
+					if message.other_group == hash("enemy") or message.other_group == hash("obstacle") then
+						lives = lives - 1
+						msg.post("/gui", "update_life", {amount = lives})
+						if lives == 0 then
+
+							end
+						end
+					end
+				end)
+			end
+		end
+	end
+
+local lives = 3
+
+function init()
+	msg.post("/gui", "update_life", {amount = lives})
+end
+
+function on_message(self, message_id, message, sender)
+	if message_id == hash("collision_response") then
+	end
+end	

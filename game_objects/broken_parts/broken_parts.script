@@ -1,0 +1,28 @@
+local score = 1
+local minus_score = -1
+local speed = -240
+
+function update(self, dt)
+	local p = go.get_position()
+	p.x = p.x + speed * dt
+	if p.x < -32 then
+		msg.post("/gui", "add_score", {amount = minus_score})
+		go.delete()
+	end
+	go.set_position(p)
+end
+
+function on_message(self, message_id, message, sender)
+	if message_id == hash("collision_response") then
+		if message.other_group == hash("bullet") then
+			msg.post("/gui", "add_score", {amount = score})
+			--particlefx.play("#pickup")
+			go.delete()	
+			go.delete(message.other_id)
+		elseif message.other_group == hash("spaceship") then
+			msg.post("/gui", "add_score", {amount = minus_score})
+			--particlefx.play("#pickup")
+			go.delete()
+		end
+	end
+end

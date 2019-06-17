@@ -1,0 +1,6 @@
+images {
+  image: "/Space_Cleaner/PNG/player/playerShip2_blue.png"
+}
+margin: 0
+extrude_borders: 0
+inner_padding: 0

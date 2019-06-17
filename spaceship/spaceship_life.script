@@ -1,0 +1,17 @@
+local lives = 3
+
+function init()
+	msg.post("/gui", "update_life", {amount = lives})
+end
+
+function on_message(self, message_id, message, sender)
+	if message_id == hash("collision_response") then
+		if message.other_group == hash("enemy") or message.other_group == hash("obstacle") then
+			lives = lives - 1
+			msg.post("/gui", "update_life", {amount = lives})
+			if lives == 0 then
+
+			end
+		end
+	end
+end

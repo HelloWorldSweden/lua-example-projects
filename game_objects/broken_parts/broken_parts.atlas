@@ -1,0 +1,15 @@
+images {
+  image: "/Space_Cleaner/PNG/Trash/ship1.png"
+}
+images {
+  image: "/Space_Cleaner/PNG/Trash/ship2.png"
+}
+images {
+  image: "/Space_Cleaner/PNG/Trash/parts1.png"
+}
+images {
+  image: "/Space_Cleaner/PNG/Trash/parts2.png"
+}
+margin: 0
+extrude_borders: 0
+inner_padding: 0

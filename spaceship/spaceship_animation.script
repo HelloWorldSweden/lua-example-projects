@@ -1,0 +1,4 @@
+function init()
+	go.set(".", "euler.z", -5)
+	go.animate(".", "euler.z", go.PLAYBACK_LOOP_PINGPONG, 5, go.EASING_INOUTSINE, 2)
+end
