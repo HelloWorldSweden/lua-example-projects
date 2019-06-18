@@ -3,22 +3,23 @@ function init(self)
 	timer.delay(1, true, spawn_trash)
 end
 
-[[function spawn_trash()
-	local position = go.get_position()
-	position.x = sys.get_config("display.width")
-	position.y = math.random(0, 300)
+function spawn_trash()
+local position = go.get_position()
+position.x = sys.get_config("display.width")
+position.y = math.random(0, 300)
 
-	local number = math.random()
-	if number < 0.25 then
-		factory_name = "#broken1_factory"
-	elseif number < 0.5 then
-		factory_name = "#broken2_factory"
-	elseif number < 0.75 then
-		factory_name = "#broken_ship1_factory"
-	else
-		factory_name = "#broken_ship2_factory"
-	end
-	factory.create(factory_name, position)
+local number = math.random()
+if number < 0.25 then
+	factory_name = "#broken1_factory"
+elseif number < 0.5 then
+	factory_name = "#broken2_factory"
+elseif number < 0.75 then
+	factory_name = "#broken_ship1_factory"
+else
+	factory_name = "#broken_ship2_factory"
 end
-]]
+factory.create(factory_name, position)
+end
+
+
 
