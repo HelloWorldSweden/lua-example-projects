@@ -1,0 +1,30 @@
+function init(self)
+	msg.post(".", "acquire_input_focus")
+end
+
+local function update_size()
+	scale = go.get_scale()
+	scale.x = size
+	scale.y = size
+	scale.z = size
+	msg.post("controller#size_controller", "update_size", { scale = scale, from = "red_cell", position = go.get_position() })
+	go.delete()
+end
+
+function on_message(self, message_id, message, sender)
+	
+end
+
+function on_input(self, action_id, action)
+	local position = go.get_position()
+	if action_id == hash("up") then
+		
+	elseif action_id == hash("down") then
+		
+	elseif action_id == hash("right") then
+		
+	elseif action_id == hash("left") then
+		
+	end
+	go.set_position(position)
+end

@@ -1,0 +1,29 @@
+local camera = require("orthographic.camera")
+
+function init(self)
+	math.randomseed(os.time())
+	math.random(); math.random(); math.random()
+
+	create_small_cell()
+end
+
+function create_random_position()
+	local window_width, window_height = camera.get_window_size()
+	x_min = -window_width/2
+	y_min = -window_height/2
+	x_max = window_width/2
+	y_max = window_height/2
+
+	local position = vmath.vector3()
+	position.x = math.random(x_min, x_max)
+	position.y = math.random(y_min, y_max)
+	return position
+end
+
+function create_small_cell()
+	local position = create_random_position()
+	factory.create("#factory", position, nil, {}, vmath.vector3(0.05, 0.05, 0.05))
+
+	local time_to_next_cell = math.random(0.7, 1.2)
+	timer.delay(time_to_next_cell, false, create_small_cell)
+end

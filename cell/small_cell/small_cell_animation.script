@@ -1,0 +1,4 @@
+function init(self)
+	local big_scale = vmath.vector3(0.06, 0.06, 0.06)
+	-- go.animate(".", "scale", go.PLAYBACK_LOOP_PINGPONG, big_scale, go.EASING_LINEAR, 1)
+end

@@ -1,0 +1,7 @@
+local image_names = {"red_cell", "green_cell"}
+
+function init(self)
+	local index = math.random(1, table.getn(image_names))
+	sprite_name = image_names[index]
+	msg.post("#sprite", "play_animation", {id = hash(sprite_name)})
+end

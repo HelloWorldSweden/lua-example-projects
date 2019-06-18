@@ -1,0 +1,14 @@
+-- This script is needed because there is still a bug in Defold which prevents dynamic scaling of collision objects 
+-- when you scale a game object
+
+function on_message(self, message_id, message, sender)
+	if message_id == hash("update_size") then
+		local factory_url = ""
+		if message.from == "green_cell" then
+			factory_url = "#green_cell_factory"
+		elseif message.from == "red_cell" then
+			factory_url = "#red_cell_factory"
+		end
+		factory.create(factory_url, message.position, nil, {}, message.scale)
+	end
+end

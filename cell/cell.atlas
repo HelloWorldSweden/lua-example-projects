@@ -1,0 +1,9 @@
+images {
+  image: "/cell/images/red_cell.png"
+}
+images {
+  image: "/cell/images/green_cell.png"
+}
+margin: 0
+extrude_borders: 0
+inner_padding: 0
