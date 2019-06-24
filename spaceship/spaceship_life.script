@@ -10,7 +10,7 @@ function on_message(self, message_id, message, sender)
 			lives = lives - 1
 			msg.post("/gui", "update_life", {amount = lives})
 			if lives == 0 then
-
+			print("död")
 			end
 		end
 	end

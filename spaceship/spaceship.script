@@ -2,9 +2,11 @@ local min_y = 50
 local max_y = 700
 local max_x = 1200
 local min_x = 10
+local lives = 3
 
 function init(self)
 	msg.post(".", "acquire_input_focus")
+	msg.post("/gui", "update_life", {amount = lives})
 end
 
 function on_input(self, action_id, action)
@@ -59,7 +61,7 @@ function on_message(self, message_id, message, sender)
 					fire()
 				else
 					timer.cancel(handle)
-					if message.other_group == hash("enemy") or message.other_group == hash("obstacle") then
+					if message.other_group == hash("trash") or message.other_group == hash("obstacle") then
 						lives = lives - 1
 						msg.post("/gui", "update_life", {amount = lives})
 						if lives == 0 then
@@ -72,13 +74,4 @@ function on_message(self, message_id, message, sender)
 		end
 	end
 
-local lives = 3
 
-function init()
-	msg.post("/gui", "update_life", {amount = lives})
-end
-
-function on_message(self, message_id, message, sender)
-	if message_id == hash("collision_response") then
-	end
-end	
