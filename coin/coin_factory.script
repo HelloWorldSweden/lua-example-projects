@@ -1,0 +1,12 @@
+function init(self)
+	math.randomseed(os.time())
+	timer.delay(2, true, spawn_coin)
+end
+
+function spawn_coin()
+	local position = go.get_position()
+	position.x = math.random(100, 300)
+	factory.create("#factory", vmath.vector3(position.x, 750, 0))
+	
+end
+

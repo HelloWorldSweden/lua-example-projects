@@ -1,25 +1,19 @@
 images {
-  image: "/import/background-elements-redux/Backgrounds/backgroundColorGrass.png"
-}
-images {
-  image: "/import/background-elements-redux/PNG/Retina/tree.png"
-}
-images {
-  image: "/import/jumperpack_kenney/PNG/Items/spring.png"
+  image: "/player/spring.png"
 }
 animations {
   id: "coin"
   images {
-    image: "/import/jumperpack_kenney/PNG/Items/gold_1.png"
+    image: "/coin/images/gold_1.png"
   }
   images {
-    image: "/import/jumperpack_kenney/PNG/Items/gold_2.png"
+    image: "/coin/images/gold_2.png"
   }
   images {
-    image: "/import/jumperpack_kenney/PNG/Items/gold_3.png"
+    image: "/coin/images/gold_3.png"
   }
   images {
-    image: "/import/jumperpack_kenney/PNG/Items/gold_4.png"
+    image: "/coin/images/gold_4.png"
   }
   playback: PLAYBACK_LOOP_PINGPONG
   fps: 10

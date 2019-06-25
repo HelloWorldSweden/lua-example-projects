@@ -1,5 +1,5 @@
 [project]
-title = Desktop game
+title = Falling coin
 
 [bootstrap]
 main_collection = /main/main.collectionc

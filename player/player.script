@@ -1,0 +1,14 @@
+function init()
+	msg.post(".", "acquire_input_focus")
+end
+
+function on_input(self, action_id, action)
+	local position = ?
+	if action_id == hash("left") then
+		position.x = position.x - 12,7
+	elseif action_id == hash("right") then
+		position.x = position.x + 12,7
+	end
+	go.set_position(position)
+end
+
