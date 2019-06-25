@@ -1,0 +1,15 @@
+images {
+  image: "/imported/physics/physicspack/PNG/Backgrounds/blue_desert.png"
+}
+images {
+  image: "/imported/physics/physicspack/PNG/Backgrounds/blue_grass.png"
+}
+images {
+  image: "/imported/physics/physicspack/PNG/Backgrounds/blue_land.png"
+}
+images {
+  image: "/imported/physics/physicspack/PNG/Backgrounds/blue_shroom.png"
+}
+margin: 0
+extrude_borders: 0
+inner_padding: 0

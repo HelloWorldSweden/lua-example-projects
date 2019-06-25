@@ -1,0 +1,41 @@
+function init(self)
+	math.randomseed(0)
+	timer.delay(1.5, true, spawn_obstacle)
+end
+
+function spawn_obstacle()
+	local position = go.get_position()
+	position.x = sys.get_config("display.width")
+	position.y = math.random(0, 700)
+
+	local number = math.random()
+
+	if number < 0.25 then
+		factory_name = "#obstacle3"
+	elseif number < 0.5 then
+		factory_name = "#obstacle2"
+	else 
+		factory_name = "#obstacle1"
+	end
+	factory.create(factory_name, position)
+end
+
+function update(self, dt)
+	-- Add update code here
+	-- Remove this function if not needed
+end
+
+function on_message(self, message_id, message, sender)
+	-- Add message-handling code here
+	-- Remove this function if not needed
+end
+
+function on_input(self, action_id, action)
+	-- Add input-handling code here
+	-- Remove this function if not needed
+end
+
+function on_reload(self)
+	-- Add reload-handling code here
+	-- Remove this function if not needed
+end
