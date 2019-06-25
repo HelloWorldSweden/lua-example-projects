@@ -1,0 +1,30 @@
+images {
+  image: "/main/assets/sports/kenney_sportspack/PNG/Equipment/ball_soccer2.png"
+}
+images {
+  image: "/main/assets/sports/kenney_sportspack/PNG/Blue/characterBlue (1).png"
+}
+images {
+  image: "/main/assets/sports/kenney_sportspack/PNG/Red/characterRed (1).png"
+}
+images {
+  image: "/main/assets/sports/element (32).png"
+}
+images {
+  image: "/main/assets/sports/element (33).png"
+}
+images {
+  image: "/main/assets/sports/element (36).png"
+}
+images {
+  image: "/main/assets/sports/element (59).png"
+}
+images {
+  image: "/main/assets/sports/element (60).png"
+}
+images {
+  image: "/main/assets/sports/element (61).png"
+}
+margin: 0
+extrude_borders: 0
+inner_padding: 0
