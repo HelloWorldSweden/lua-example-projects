@@ -12,3 +12,5 @@ Download example projects below:
 | Bacteria | [`bacteria`](https://github.com/HelloWorldSweden/lua-example-projects/tree/bacteria) | [`bacteria.zip`](https://github.com/HelloWorldSweden/lua-example-projects/archive/bacteria.zip)
 | Crush Candy | [`crushcandy`](https://github.com/HelloWorldSweden/lua-example-projects/tree/crushcandy) | [`crushcandy.zip`](https://github.com/HelloWorldSweden/lua-example-projects/archive/crushcandy.zip)
 | Jumping | [`jumping`](https://github.com/HelloWorldSweden/lua-example-projects/tree/jumping) | [`jumping.zip`](https://github.com/HelloWorldSweden/lua-example-projects/archive/jumping.zip)
+| ninjarun | [`ninjarun`](https://github.com/HelloWorldSweden/lua-example-projects/tree/ninjarun) | [`ninjarun.zip`](https://github.com/HelloWorldSweden/lua-example-projects/archive/ninjarun.zip)
+
