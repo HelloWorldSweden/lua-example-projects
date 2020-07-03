@@ -1,12 +1,11 @@
 function init(self)
 	math.randomseed(0)
-	timer.delay(1.5, true, spawn_obstacle)
 end
 
 function spawn_obstacle()
 	local position = go.get_position()
 	position.x = sys.get_config("display.width")
-	position.y = math.random(0, 700)
+	position.y = math.random(0, 100)
 
 	local number = math.random()
 
