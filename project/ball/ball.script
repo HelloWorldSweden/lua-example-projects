@@ -1,0 +1,45 @@
+function init(self)
+	
+	
+end
+
+function final(self)
+	-- Add finalization code here
+	-- Remove this function if not needed
+end
+
+function update(self, dt)
+	p = go.get_position()
+	if p == vmath.vector3(642, 366, 0) then
+		msg.post("#collisionobject" , "enable")
+	end
+end
+
+function on_message(self, message_id, message, sender)
+	if message_id == hash("collision_response") then
+		if message.other_group == hash("goal1") or message.other_group == hash("goal2") then
+			msg.post("#collisionobject" , "disable")
+			go.set_position(vmath.vector3(642, 366, 0))
+		end
+
+	elseif message_id == hash("contact_point_response") then
+		if message.other_group == hash("player1") or message.other_group == hash("player2") then
+			ball_pos = go.get_position()
+			other_pos = message.other_position
+			diff = ((ball_pos.x-other_pos.x)^2+(ball_pos.y-other_pos.y)^2)^(1/2)
+			msg.post("#collisionobject", "apply_force", {force = vmath.vector3((ball_pos.x-other_pos.x)*5, (ball_pos.y-other_pos.y)*5, 0), position = go.get_world_position()})
+		end
+	end
+	
+	
+end
+
+function on_input(self, action_id, action)
+	-- Add input-handling code here
+	-- Remove this function if not needed
+end
+
+function on_reload(self)
+	-- Add reload-handling code here
+	-- Remove this function if not needed
+end

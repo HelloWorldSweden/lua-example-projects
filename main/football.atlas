@@ -1,29 +1,38 @@
 images {
-  image: "/main/assets/sports/kenney_sportspack/PNG/Equipment/ball_soccer2.png"
+  image: "/images/sports/kenney_sportspack/PNG/Equipment/ball_soccer2.png"
+  sprite_trim_mode: SPRITE_TRIM_MODE_OFF
 }
 images {
-  image: "/main/assets/sports/kenney_sportspack/PNG/Blue/characterBlue (1).png"
+  image: "/images/sports/kenney_sportspack/PNG/Blue/characterBlue (1).png"
+  sprite_trim_mode: SPRITE_TRIM_MODE_OFF
 }
 images {
-  image: "/main/assets/sports/kenney_sportspack/PNG/Red/characterRed (1).png"
+  image: "/images/sports/kenney_sportspack/PNG/Red/characterRed (1).png"
+  sprite_trim_mode: SPRITE_TRIM_MODE_OFF
 }
 images {
-  image: "/main/assets/sports/element (32).png"
+  image: "/images/sports/element (32).png"
+  sprite_trim_mode: SPRITE_TRIM_MODE_OFF
 }
 images {
-  image: "/main/assets/sports/element (33).png"
+  image: "/images/sports/element (33).png"
+  sprite_trim_mode: SPRITE_TRIM_MODE_OFF
 }
 images {
-  image: "/main/assets/sports/element (36).png"
+  image: "/images/sports/element (36).png"
+  sprite_trim_mode: SPRITE_TRIM_MODE_OFF
 }
 images {
-  image: "/main/assets/sports/element (59).png"
+  image: "/images/sports/element (59).png"
+  sprite_trim_mode: SPRITE_TRIM_MODE_OFF
 }
 images {
-  image: "/main/assets/sports/element (60).png"
+  image: "/images/sports/element (60).png"
+  sprite_trim_mode: SPRITE_TRIM_MODE_OFF
 }
 images {
-  image: "/main/assets/sports/element (61).png"
+  image: "/images/sports/element (61).png"
+  sprite_trim_mode: SPRITE_TRIM_MODE_OFF
 }
 margin: 0
 extrude_borders: 0

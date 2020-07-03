@@ -1,0 +1,30 @@
+local points1 = 0
+local points2 = 0
+
+function init(self)
+	set_points1(points1)
+	set_points2(points2)
+end
+
+function set_points1(x)
+	text = "Player 1: " .. x 
+	gui.set_text(gui.get_node("player1"), text)
+end
+
+function set_points2(x)
+	text1 = "Player 2: " .. x 
+	gui.set_text(gui.get_node("player2"), text1)
+end
+
+
+function on_message(self, message_id, message, sender)
+	if message_id == hash("goal1") then
+		points1 = points1 + 0.5
+		set_points1(points1)
+	end
+	if message_id == hash("goal2") then
+		points2 = points2 + 0.5
+		set_points2(points2)
+	end
+end
+

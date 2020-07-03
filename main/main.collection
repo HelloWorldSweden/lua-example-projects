@@ -1,7 +1,7 @@
 name: "main"
 instances {
   id: "player1"
-  prototype: "/main/player1.go"
+  prototype: "/project/players/player1.go"
   position {
     x: 1009.0
     y: 211.0
@@ -21,7 +21,7 @@ instances {
 }
 instances {
   id: "player2"
-  prototype: "/main/player2.go"
+  prototype: "/project/players/player2.go"
   position {
     x: 315.0
     y: 197.0
@@ -41,7 +41,7 @@ instances {
 }
 instances {
   id: "goal2"
-  prototype: "/main/goal2.go"
+  prototype: "/project/goals/goal2.go"
   position {
     x: 53.0
     y: 378.0
@@ -61,7 +61,7 @@ instances {
 }
 instances {
   id: "goal1"
-  prototype: "/main/goal1.go"
+  prototype: "/project/goals/goal1.go"
   position {
     x: 1169.0
     y: 370.0
@@ -81,7 +81,7 @@ instances {
 }
 instances {
   id: "bakgrund"
-  prototype: "/main/bakgrund.go"
+  prototype: "/map/bakgrund.go"
   position {
     x: 104.0
     y: 22.0
@@ -101,7 +101,7 @@ instances {
 }
 instances {
   id: "ball"
-  prototype: "/main/ball.go"
+  prototype: "/project/ball/ball.go"
   position {
     x: 642.0
     y: 367.0
@@ -124,7 +124,7 @@ embedded_instances {
   id: "gui"
   data: "components {\n"
   "  id: \"main\"\n"
-  "  component: \"/main/main.gui\"\n"
+  "  component: \"/main/gui/main.gui\"\n"
   "  position {\n"
   "    x: 0.0\n"
   "    y: 0.0\n"
