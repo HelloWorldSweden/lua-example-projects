@@ -1,6 +1,6 @@
 components {
   id: "obstacle"
-  component: "/main/obstacles/obstacle.script"
+  component: "/obstacles/obstacle.script"
   position {
     x: 0.0
     y: 0.0
@@ -14,10 +14,10 @@ components {
   }
 }
 embedded_components {
-  id: "sprite"
+  id: "sprite1"
   type: "sprite"
-  data: "tile_set: \"/main/obstacles/obtacles.atlas\"\n"
-  "default_animation: \"elementStone018\"\n"
+  data: "tile_set: \"/obstacles/obtacles.atlas\"\n"
+  "default_animation: \"elementStone051\"\n"
   "material: \"/builtins/materials/sprite.material\"\n"
   "blend_mode: BLEND_MODE_ALPHA\n"
   ""
@@ -60,8 +60,8 @@ embedded_components {
   "    index: 0\n"
   "    count: 3\n"
   "  }\n"
-  "  data: 68.0985\n"
-  "  data: 68.276\n"
+  "  data: 107.873\n"
+  "  data: 66.7465\n"
   "  data: 10.0\n"
   "}\n"
   "linear_damping: 0.0\n"

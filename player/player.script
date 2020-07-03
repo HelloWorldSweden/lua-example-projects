@@ -7,13 +7,10 @@ function final(self)
 	print("deleted")
 end
 
-function update(self, dt)
-
-end
 
 function on_message(self, message_id, message, sender)
 	if message_id == hash("collision_response") then
-		if message.other_group == hash("ground") then
+		if message.other_group == hash("limit") then
 			msg.post("gui#gui", "deleted")
 			go.delete()
 		end
@@ -25,12 +22,7 @@ function add_score()
 end
 
 function on_input(self, action_id, action)
-	if action_id == hash("space") and action.released == true then
+	if action_id == hash("space") and action.pressed then
 		msg.post("#collisionobject", "apply_force", {force = vmath.vector3(0, 40000, 0), position = go.get_world_position() } )
 	end
-end
-
-function on_reload(self)
-	-- Add reload-handling code here
-	-- Remove this function if not needed
 end

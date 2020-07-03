@@ -1,6 +1,6 @@
 components {
   id: "player"
-  component: "/main/player.script"
+  component: "/player/player.script"
   position {
     x: 0.0
     y: 0.0
@@ -16,7 +16,7 @@ components {
 embedded_components {
   id: "sprite"
   type: "sprite"
-  data: "tile_set: \"/main/player.atlas\"\n"
+  data: "tile_set: \"/player/player.atlas\"\n"
   "default_animation: \"alienGreen_round\"\n"
   "material: \"/builtins/materials/sprite.material\"\n"
   "blend_mode: BLEND_MODE_ALPHA\n"
@@ -42,8 +42,8 @@ embedded_components {
   "friction: 0.1\n"
   "restitution: 0.5\n"
   "group: \"player\"\n"
-  "mask: \"ground\"\n"
   "mask: \"obstacle\"\n"
+  "mask: \"limit\"\n"
   "embedded_collision_shape {\n"
   "  shapes {\n"
   "    shape_type: TYPE_SPHERE\n"
