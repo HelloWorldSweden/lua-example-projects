@@ -5,12 +5,10 @@ end
 
 function on_message(self, message_id, message, sender)
 	if message_id == hash("trigger_response") then
-		if  message.other_group == hash("ball") then
-			goal1()
+		if  message.other_group == hash("") then
+			
 		end
 	end
 end
 
-function goal1()
-	msg.post("/gui", "goal1")
-end
+	

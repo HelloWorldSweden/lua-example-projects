@@ -9,12 +9,7 @@ function on_input(self, action_id, action)
 		position.y = position.y + 10
 	elseif action_id == hash("left") then
 		position.x = position.x - 10
-	elseif action_id == hash("right") then
-		position.x = position.x + 10
-	elseif action_id == hash("down") then
-		position.y = position.y - 10
 	end
-	go.set_position(position)
 end
 
 function update(self, dt)

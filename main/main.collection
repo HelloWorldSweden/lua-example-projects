@@ -3,15 +3,15 @@ instances {
   id: "player1"
   prototype: "/project/players/player1.go"
   position {
-    x: 1009.0
+    x: 382.0
     y: 211.0
     z: 1.0
   }
   rotation {
     x: 0.0
     y: 0.0
-    z: 0.0
-    w: 1.0
+    z: 1.0
+    w: 6.123234E-17
   }
   scale3 {
     x: 2.0
@@ -23,15 +23,15 @@ instances {
   id: "player2"
   prototype: "/project/players/player2.go"
   position {
-    x: 315.0
+    x: 949.0
     y: 197.0
     z: 1.0
   }
   rotation {
     x: 0.0
     y: 0.0
-    z: 0.0
-    w: 1.0
+    z: -1.0
+    w: 6.123234E-17
   }
   scale3 {
     x: 2.0
