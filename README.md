@@ -1,19 +1,32 @@
-# Welcome to Defold
+# Football
+## Ett ofärdigt 2-spelarspel
+### Utveckla klart spelet!
 
-This project was created from the "desktop" project template. This means that the settings in ["game.project"](defold://open?path=/game.project) have been changed to be suitable for a desktop game:
+#### Lite ledtrådar på var man ska leta fel
+- Player 1:
+    - `player1.script` -> `on_input()`
+        - Vi måste skriva in kod för att göra att player1 kan röra på sig.
+    - `player1.go`
+        - Vi behöver koppla ett skrip som styr spelobjektet player1.go (go - gameobject)
+- Player 2:
+    - `player2.script` -> `on_input()`
+        - Spelare 2 kan bara röra sig upp och till vänster
+        - Ta en titt i */input/game.input_binding*
+- Goal 1
+    - `goal1.script` 
+        - Vad borde hända när bollen rör målet?
+    - `goal1.go` 
+        - Vi måste se till att målets två kollisionsobjekt är korrekt konfigurerade.
+- Goal 2
+    - `goal2.script`
+        - Vad borde hända när bollen rör målet?
+        - Vi måste se till att målets två kollisionobjekt är rätt konfigurerade
+- Ball
+    - `ball.script`
+        - När någon gjort mål så bör bollen läggas tillbaka på mittpunkten. Fixa detta.
+- GUI
+    - `gui.gui_script`
+        - Det saknas en en funktion som sätter poängtexten för spelare 2
 
-- The screen size is set to 1280x720
-- Projection is set to Fixed Fit
-- macOS and Windows icons are set
-- Mouse clicks are bound to action "click"
-- A simple script in a game object is set up to receive and react to input
+    
 
-[Build and run](defold://build) to see it in action. You can of course alter these settings to fit your needs.
-
-Check out [the documentation pages](https://defold.com/learn) for examples, tutorials, manuals and API docs.
-
-If you run into trouble, help is available in [our forum](https://forum.defold.com).
-
-Happy Defolding!
-
----

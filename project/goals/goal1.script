@@ -5,10 +5,13 @@ end
 
 function on_message(self, message_id, message, sender)
 	if message_id == hash("trigger_response") then
-		if  message.other_group == hash("") then
-			
+		if  message.other_group == hash("") then --Skriv klart, vad för spelobjekt ska målet detektera?
+			goal1())
 		end
 	end
 end
 
+function goal1() -- Skriv klart
+	
+end
 	
